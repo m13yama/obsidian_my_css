@@ -1,0 +1,828 @@
+/*
+  Obsidian My CSS
+
+  This file combines the local CSS snippets from:
+  - wider-markdown.css
+  - material-icon-theme-file-icons.css
+*/
+
+/* Slightly widen Obsidian's readable markdown line width. */
+body {
+  --file-line-width: 880px;
+}
+
+/*
+  Material Icon Theme-like file and folder icons for Obsidian File Explorer.
+
+  Requirements covered:
+  - CSS only; no Community Plugin required.
+  - Targets current File Explorer rows via .nav-file-title[data-path...]
+    and .nav-folder-title[data-path...].
+  - Adds icons with ::before.
+  - Uses PlemolJP Console NF / Nerd Fonts glyphs.
+  - Keeps icon width fixed so hover/active states do not shift text.
+  - Uses Obsidian color variables, so light and dark themes both work.
+
+  Install font:
+  Use "PlemolJP Console NF" from PlemolJP_NF, then restart Obsidian if the font
+  was installed while Obsidian was already running.
+*/
+
+body {
+  /* Layout tuning */
+  --mit-file-icon-font: "PlemolJP Console NF", "PlemolJP35 Console NF", "Symbols Nerd Font Mono", "Symbols Nerd Font", "Symbols Nerd Font Propo", monospace;
+  --mit-file-icon-size: 16px;
+  --mit-file-icon-width: 18px;
+  --mit-file-icon-gap: 6px;
+  --mit-file-icon-opacity: 0.95;
+  --mit-file-icon-opacity-hover: 1;
+  --mit-file-icon-translate-y: 0px;
+  --mit-folder-icon-size: var(--mit-file-icon-size);
+  --mit-folder-icon-width: var(--mit-file-icon-width);
+  --mit-folder-icon-gap: var(--mit-file-icon-gap);
+  --mit-folder-icon-opacity: 0.95;
+
+  /*
+    Folder rows already have a collapse chevron. Matching its slot width keeps
+    file rows and folder rows visually aligned.
+  */
+  --mit-folder-chevron-width: var(--mit-file-icon-width);
+
+  /* Theme-aware colors. Override these if your theme needs different contrast. */
+  --mit-color-default: var(--text-muted);
+  --mit-color-blue: var(--color-blue);
+  --mit-color-cyan: var(--color-cyan);
+  --mit-color-database: var(--color-base-100);
+  --mit-color-green: var(--color-green);
+  --mit-color-purple: var(--color-purple);
+  --mit-color-pink: var(--color-pink);
+  --mit-color-folder: var(--mit-color-database);
+  --mit-color-folder-open: var(--color-cyan);
+  --mit-color-folder-special: var(--color-yellow);
+  --mit-color-note: var(--text-accent);
+  --mit-color-canvas: var(--color-purple);
+  --mit-color-pdf: var(--color-red);
+  --mit-color-image: var(--color-green);
+  --mit-color-video: var(--color-pink);
+  --mit-color-audio: var(--color-cyan);
+  --mit-color-archive: var(--color-yellow);
+  --mit-color-config: var(--color-orange);
+  --mit-color-json: var(--color-yellow);
+  --mit-color-js: var(--color-yellow);
+  --mit-color-ts: var(--color-blue);
+  --mit-color-react: var(--color-cyan);
+  --mit-color-html: var(--color-orange);
+  --mit-color-css: var(--color-blue);
+  --mit-color-python: var(--color-blue);
+  --mit-color-go: var(--color-cyan);
+  --mit-color-rust: var(--color-orange);
+  --mit-color-java: var(--color-red);
+  --mit-color-c: var(--color-blue);
+  --mit-color-shell: var(--color-green);
+  --mit-color-docker: var(--color-blue);
+  --mit-color-env: var(--color-green);
+  --mit-color-git: var(--color-orange);
+  --mit-color-package: var(--color-red);
+  --mit-color-lock: var(--text-faint);
+
+  /*
+    Glyphs are Nerd Fonts codepoints. Most are Seti/Devicons-style icons;
+    generic media/document types use Font Awesome icons for broad availability.
+  */
+  --mit-icon-file: "\f15b";
+  --mit-icon-folder: "\f07b";
+  --mit-icon-folder-open: "\f07c";
+  /*
+    Folder rules intentionally use folder-shaped glyphs only.
+    Category variation is expressed by color, not by non-folder pictograms.
+  */
+  --mit-icon-folder-code: "\f07b";
+  --mit-icon-folder-config: "\f07b";
+  --mit-icon-folder-test: "\f07b";
+  --mit-icon-folder-build: "\f07b";
+  --mit-icon-folder-public: "\f07b";
+  --mit-icon-folder-database: "\f07b";
+  --mit-icon-folder-book: "\f07b";
+  --mit-icon-folder-inbox: "\f07b";
+  --mit-icon-folder-archive: "\f07b";
+  --mit-icon-folder-clock: "\f07b";
+  --mit-icon-folder-calendar: "\f07b";
+  --mit-icon-folder-template: "\f07b";
+  --mit-icon-folder-home: "\f07b";
+  --mit-icon-folder-key: "\f07b";
+  --mit-icon-folder-user: "\f07b";
+  --mit-icon-folder-users: "\f07b";
+  --mit-icon-folder-trash: "\f07b";
+  --mit-icon-folder-download: "\f07b";
+  --mit-icon-folder-cloud: "\f07b";
+  --mit-icon-folder-wrench: "\f07b";
+  --mit-icon-folder-star: "\f07b";
+  --mit-icon-folder-link: "\f07b";
+  --mit-icon-folder-tag: "\f07b";
+  --mit-icon-markdown: "\e609";
+  --mit-icon-canvas: "\f1fc";
+  --mit-icon-pdf: "\f1c1";
+  --mit-icon-image: "\f1c5";
+  --mit-icon-video: "\f1c8";
+  --mit-icon-audio: "\f1c7";
+  --mit-icon-archive: "\f1c6";
+  --mit-icon-json: "\e60b";
+  --mit-icon-config: "\e615";
+  --mit-icon-javascript: "\e60c";
+  --mit-icon-typescript: "\e628";
+  --mit-icon-react: "\e7ba";
+  --mit-icon-html: "\e60e";
+  --mit-icon-css: "\e614";
+  --mit-icon-scss: "\e603";
+  --mit-icon-python: "\e606";
+  --mit-icon-go: "\e627";
+  --mit-icon-rust: "\e68b";
+  --mit-icon-java: "\e738";
+  --mit-icon-c: "\e61e";
+  --mit-icon-cpp: "\e61d";
+  --mit-icon-shell: "\e795";
+  --mit-icon-docker: "\f308";
+  --mit-icon-env: "\e615";
+  --mit-icon-git: "\e702";
+  --mit-icon-package: "\e71e";
+  --mit-icon-lock: "\f023";
+}
+
+/*
+  Base File Explorer row.
+  .nav-file-title has data-path in current Obsidian, and contains:
+  .nav-file-title-content plus, for unsupported extensions, .nav-file-tag.
+*/
+.nav-files-container .nav-file-title[data-path] {
+  --mit-current-icon: var(--mit-icon-file);
+  --mit-current-color: var(--mit-color-default);
+  align-items: center;
+  display: flex;
+  min-width: 0;
+}
+
+/* Fixed-width icon slot. Fixed width prevents text jumps on hover/active. */
+.nav-files-container .nav-file-title[data-path]::before {
+  align-items: center;
+  color: var(--mit-current-color);
+  content: var(--mit-current-icon);
+  display: inline-flex;
+  flex: 0 0 var(--mit-file-icon-width);
+  font-family: var(--mit-file-icon-font);
+  font-size: var(--mit-file-icon-size);
+  font-style: normal;
+  font-weight: 400;
+  height: var(--mit-file-icon-width);
+  justify-content: center;
+  line-height: 1;
+  margin-inline-end: var(--mit-file-icon-gap);
+  opacity: var(--mit-file-icon-opacity);
+  speak: never;
+  text-rendering: auto;
+  transform: translateY(var(--mit-file-icon-translate-y));
+  width: var(--mit-file-icon-width);
+}
+
+/* Keep long names ellipsized instead of letting the icon or tag shift rows. */
+.nav-files-container .nav-file-title[data-path] .nav-file-title-content {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Extension tags shown by Obsidian should stay compact at the far edge. */
+.nav-files-container .nav-file-title[data-path] .nav-file-tag {
+  flex: 0 0 auto;
+  margin-inline-start: var(--size-2-2);
+}
+
+/*
+  Folder rows.
+  Obsidian renders the collapse chevron as an absolutely-positioned tree icon,
+  so the folder icon belongs on .nav-folder-title-content::before. This keeps
+  folder names and file names aligned at the same nesting level.
+*/
+.nav-files-container .nav-folder-title[data-path] {
+  --mit-current-folder-icon: var(--mit-icon-folder);
+  --mit-current-folder-color: var(--mit-color-folder);
+}
+
+.nav-files-container .nav-folder-title[data-path] .nav-folder-title-content {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.nav-files-container .nav-folder:not(.is-collapsed) > .nav-folder-title[data-path] {
+  --mit-current-folder-icon: var(--mit-icon-folder-open);
+}
+
+.nav-files-container .nav-folder-title[data-path] .nav-folder-title-content::before {
+  align-items: center;
+  color: var(--mit-current-folder-color);
+  content: var(--mit-current-folder-icon);
+  display: inline-flex;
+  flex: 0 0 var(--mit-folder-icon-width);
+  font-family: var(--mit-file-icon-font);
+  font-size: var(--mit-folder-icon-size);
+  font-style: normal;
+  font-weight: 400;
+  height: var(--mit-folder-icon-width);
+  justify-content: center;
+  line-height: 1;
+  margin-inline-end: var(--mit-folder-icon-gap);
+  opacity: var(--mit-folder-icon-opacity);
+  speak: never;
+  text-rendering: auto;
+  transform: translateY(var(--mit-file-icon-translate-y));
+  vertical-align: text-bottom;
+  width: var(--mit-folder-icon-width);
+}
+
+body:not(.is-grabbing) .nav-files-container .nav-folder-title[data-path]:hover .nav-folder-title-content::before {
+  opacity: var(--mit-file-icon-opacity-hover);
+}
+
+/*
+  Special folder names, loosely following VSCode Material Icon Theme habits.
+  For folder data-path, use exact match for vault-root folders and $="/name"
+  for folders nested deeper in the vault.
+*/
+.nav-files-container .nav-folder-title[data-path="src" i],
+.nav-files-container .nav-folder-title[data-path$="/src" i],
+.nav-files-container .nav-folder-title[data-path="source" i],
+.nav-files-container .nav-folder-title[data-path$="/source" i],
+.nav-files-container .nav-folder-title[data-path="app" i],
+.nav-files-container .nav-folder-title[data-path$="/app" i],
+.nav-files-container .nav-folder-title[data-path="lib" i],
+.nav-files-container .nav-folder-title[data-path$="/lib" i],
+.nav-files-container .nav-folder-title[data-path="libs" i],
+.nav-files-container .nav-folder-title[data-path$="/libs" i],
+.nav-files-container .nav-folder-title[data-path="components" i],
+.nav-files-container .nav-folder-title[data-path$="/components" i],
+.nav-files-container .nav-folder-title[data-path="pages" i],
+.nav-files-container .nav-folder-title[data-path$="/pages" i],
+.nav-files-container .nav-folder-title[data-path="routes" i],
+.nav-files-container .nav-folder-title[data-path$="/routes" i],
+.nav-files-container .nav-folder-title[data-path="hooks" i],
+.nav-files-container .nav-folder-title[data-path$="/hooks" i] {
+  --mit-current-folder-icon: var(--mit-icon-folder-code);
+  --mit-current-folder-color: var(--mit-color-ts);
+}
+
+.nav-files-container .nav-folder-title[data-path="scripts" i],
+.nav-files-container .nav-folder-title[data-path$="/scripts" i],
+.nav-files-container .nav-folder-title[data-path="bin" i],
+.nav-files-container .nav-folder-title[data-path$="/bin" i],
+.nav-files-container .nav-folder-title[data-path="cli" i],
+.nav-files-container .nav-folder-title[data-path$="/cli" i] {
+  --mit-current-folder-icon: var(--mit-icon-folder);
+  --mit-current-folder-color: var(--mit-color-shell);
+}
+
+.nav-files-container .nav-folder-title[data-path="tools" i],
+.nav-files-container .nav-folder-title[data-path$="/tools" i],
+.nav-files-container .nav-folder-title[data-path="tooling" i],
+.nav-files-container .nav-folder-title[data-path$="/tooling" i],
+.nav-files-container .nav-folder-title[data-path="utils" i],
+.nav-files-container .nav-folder-title[data-path$="/utils" i],
+.nav-files-container .nav-folder-title[data-path="utilities" i],
+.nav-files-container .nav-folder-title[data-path$="/utilities" i] {
+  --mit-current-folder-icon: var(--mit-icon-folder-wrench);
+  --mit-current-folder-color: var(--mit-color-config);
+}
+
+.nav-files-container .nav-folder-title[data-path="config" i],
+.nav-files-container .nav-folder-title[data-path$="/config" i],
+.nav-files-container .nav-folder-title[data-path="configs" i],
+.nav-files-container .nav-folder-title[data-path$="/configs" i],
+.nav-files-container .nav-folder-title[data-path=".config" i],
+.nav-files-container .nav-folder-title[data-path$="/.config" i],
+.nav-files-container .nav-folder-title[data-path="settings" i],
+.nav-files-container .nav-folder-title[data-path$="/settings" i],
+.nav-files-container .nav-folder-title[data-path=".obsidian" i],
+.nav-files-container .nav-folder-title[data-path$="/.obsidian" i] {
+  --mit-current-folder-icon: var(--mit-icon-folder-config);
+  --mit-current-folder-color: var(--mit-color-config);
+}
+
+.nav-files-container .nav-folder-title[data-path="test" i],
+.nav-files-container .nav-folder-title[data-path$="/test" i],
+.nav-files-container .nav-folder-title[data-path="tests" i],
+.nav-files-container .nav-folder-title[data-path$="/tests" i],
+.nav-files-container .nav-folder-title[data-path="__tests__" i],
+.nav-files-container .nav-folder-title[data-path$="/__tests__" i],
+.nav-files-container .nav-folder-title[data-path="spec" i],
+.nav-files-container .nav-folder-title[data-path$="/spec" i],
+.nav-files-container .nav-folder-title[data-path="specs" i],
+.nav-files-container .nav-folder-title[data-path$="/specs" i],
+.nav-files-container .nav-folder-title[data-path="e2e" i],
+.nav-files-container .nav-folder-title[data-path$="/e2e" i],
+.nav-files-container .nav-folder-title[data-path="cypress" i],
+.nav-files-container .nav-folder-title[data-path$="/cypress" i],
+.nav-files-container .nav-folder-title[data-path="playwright" i],
+.nav-files-container .nav-folder-title[data-path$="/playwright" i] {
+  --mit-current-folder-icon: var(--mit-icon-folder-test);
+  --mit-current-folder-color: var(--mit-color-green);
+}
+
+.nav-files-container .nav-folder-title[data-path="build" i],
+.nav-files-container .nav-folder-title[data-path$="/build" i],
+.nav-files-container .nav-folder-title[data-path="dist" i],
+.nav-files-container .nav-folder-title[data-path$="/dist" i],
+.nav-files-container .nav-folder-title[data-path="out" i],
+.nav-files-container .nav-folder-title[data-path$="/out" i],
+.nav-files-container .nav-folder-title[data-path="target" i],
+.nav-files-container .nav-folder-title[data-path$="/target" i],
+.nav-files-container .nav-folder-title[data-path="release" i],
+.nav-files-container .nav-folder-title[data-path$="/release" i] {
+  --mit-current-folder-icon: var(--mit-icon-folder-build);
+  --mit-current-folder-color: var(--mit-color-archive);
+}
+
+.nav-files-container .nav-folder-title[data-path="public" i],
+.nav-files-container .nav-folder-title[data-path$="/public" i],
+.nav-files-container .nav-folder-title[data-path="static" i],
+.nav-files-container .nav-folder-title[data-path$="/static" i],
+.nav-files-container .nav-folder-title[data-path="www" i],
+.nav-files-container .nav-folder-title[data-path$="/www" i] {
+  --mit-current-folder-icon: var(--mit-icon-folder-public);
+  --mit-current-folder-color: var(--mit-color-cyan);
+}
+
+.nav-files-container .nav-folder-title[data-path="styles" i],
+.nav-files-container .nav-folder-title[data-path$="/styles" i],
+.nav-files-container .nav-folder-title[data-path="style" i],
+.nav-files-container .nav-folder-title[data-path$="/style" i],
+.nav-files-container .nav-folder-title[data-path="css" i],
+.nav-files-container .nav-folder-title[data-path$="/css" i],
+.nav-files-container .nav-folder-title[data-path="scss" i],
+.nav-files-container .nav-folder-title[data-path$="/scss" i],
+.nav-files-container .nav-folder-title[data-path="sass" i],
+.nav-files-container .nav-folder-title[data-path$="/sass" i] {
+  --mit-current-folder-icon: var(--mit-icon-folder);
+  --mit-current-folder-color: var(--mit-color-css);
+}
+
+.nav-files-container .nav-folder-title[data-path="images" i],
+.nav-files-container .nav-folder-title[data-path$="/images" i],
+.nav-files-container .nav-folder-title[data-path="image" i],
+.nav-files-container .nav-folder-title[data-path$="/image" i],
+.nav-files-container .nav-folder-title[data-path="img" i],
+.nav-files-container .nav-folder-title[data-path$="/img" i],
+.nav-files-container .nav-folder-title[data-path="icons" i],
+.nav-files-container .nav-folder-title[data-path$="/icons" i],
+.nav-files-container .nav-folder-title[data-path="screenshots" i],
+.nav-files-container .nav-folder-title[data-path$="/screenshots" i] {
+  --mit-current-folder-icon: var(--mit-icon-folder);
+  --mit-current-folder-color: var(--mit-color-image);
+}
+
+.nav-files-container .nav-folder-title[data-path="video" i],
+.nav-files-container .nav-folder-title[data-path$="/video" i],
+.nav-files-container .nav-folder-title[data-path="videos" i],
+.nav-files-container .nav-folder-title[data-path$="/videos" i],
+.nav-files-container .nav-folder-title[data-path="movies" i],
+.nav-files-container .nav-folder-title[data-path$="/movies" i] {
+  --mit-current-folder-icon: var(--mit-icon-folder);
+  --mit-current-folder-color: var(--mit-color-video);
+}
+
+.nav-files-container .nav-folder-title[data-path="audio" i],
+.nav-files-container .nav-folder-title[data-path$="/audio" i],
+.nav-files-container .nav-folder-title[data-path="music" i],
+.nav-files-container .nav-folder-title[data-path$="/music" i],
+.nav-files-container .nav-folder-title[data-path="sounds" i],
+.nav-files-container .nav-folder-title[data-path$="/sounds" i] {
+  --mit-current-folder-icon: var(--mit-icon-folder);
+  --mit-current-folder-color: var(--mit-color-audio);
+}
+
+.nav-files-container .nav-folder-title[data-path="assets" i],
+.nav-files-container .nav-folder-title[data-path$="/assets" i],
+.nav-files-container .nav-folder-title[data-path="asset" i],
+.nav-files-container .nav-folder-title[data-path$="/asset" i],
+.nav-files-container .nav-folder-title[data-path="attachments" i],
+.nav-files-container .nav-folder-title[data-path$="/attachments" i],
+.nav-files-container .nav-folder-title[data-path="media" i],
+.nav-files-container .nav-folder-title[data-path$="/media" i] {
+  --mit-current-folder-icon: var(--mit-icon-folder-archive);
+  --mit-current-folder-color: var(--mit-color-folder-special);
+}
+
+.nav-files-container .nav-folder-title[data-path="docs" i],
+.nav-files-container .nav-folder-title[data-path$="/docs" i],
+.nav-files-container .nav-folder-title[data-path="doc" i],
+.nav-files-container .nav-folder-title[data-path$="/doc" i],
+.nav-files-container .nav-folder-title[data-path="wiki" i],
+.nav-files-container .nav-folder-title[data-path$="/wiki" i],
+.nav-files-container .nav-folder-title[data-path="knowledge" i],
+.nav-files-container .nav-folder-title[data-path$="/knowledge" i] {
+  --mit-current-folder-icon: var(--mit-icon-folder-book);
+  --mit-current-folder-color: var(--mit-color-note);
+}
+
+.nav-files-container .nav-folder-title[data-path="notes" i],
+.nav-files-container .nav-folder-title[data-path$="/notes" i],
+.nav-files-container .nav-folder-title[data-path="zettel" i],
+.nav-files-container .nav-folder-title[data-path$="/zettel" i],
+.nav-files-container .nav-folder-title[data-path="markdown" i],
+.nav-files-container .nav-folder-title[data-path$="/markdown" i] {
+  --mit-current-folder-icon: var(--mit-icon-folder);
+  --mit-current-folder-color: var(--mit-color-note);
+}
+
+.nav-files-container .nav-folder-title[data-path="templates" i],
+.nav-files-container .nav-folder-title[data-path$="/templates" i],
+.nav-files-container .nav-folder-title[data-path="template" i],
+.nav-files-container .nav-folder-title[data-path$="/template" i] {
+  --mit-current-folder-icon: var(--mit-icon-folder-template);
+  --mit-current-folder-color: var(--mit-color-purple);
+}
+
+.nav-files-container .nav-folder-title[data-path="daily" i],
+.nav-files-container .nav-folder-title[data-path$="/daily" i],
+.nav-files-container .nav-folder-title[data-path="dailies" i],
+.nav-files-container .nav-folder-title[data-path$="/dailies" i],
+.nav-files-container .nav-folder-title[data-path="journal" i],
+.nav-files-container .nav-folder-title[data-path$="/journal" i],
+.nav-files-container .nav-folder-title[data-path="journals" i],
+.nav-files-container .nav-folder-title[data-path$="/journals" i],
+.nav-files-container .nav-folder-title[data-path="log" i],
+.nav-files-container .nav-folder-title[data-path$="/log" i],
+.nav-files-container .nav-folder-title[data-path="logs" i],
+.nav-files-container .nav-folder-title[data-path$="/logs" i] {
+  --mit-current-folder-icon: var(--mit-icon-folder-calendar);
+  --mit-current-folder-color: var(--mit-color-canvas);
+}
+
+.nav-files-container .nav-folder-title[data-path="inbox" i],
+.nav-files-container .nav-folder-title[data-path$="/inbox" i],
+.nav-files-container .nav-folder-title[data-path="capture" i],
+.nav-files-container .nav-folder-title[data-path$="/capture" i],
+.nav-files-container .nav-folder-title[data-path="captures" i],
+.nav-files-container .nav-folder-title[data-path$="/captures" i] {
+  --mit-current-folder-icon: var(--mit-icon-folder-inbox);
+  --mit-current-folder-color: var(--mit-color-audio);
+}
+
+.nav-files-container .nav-folder-title[data-path="archive" i],
+.nav-files-container .nav-folder-title[data-path$="/archive" i],
+.nav-files-container .nav-folder-title[data-path="archives" i],
+.nav-files-container .nav-folder-title[data-path$="/archives" i],
+.nav-files-container .nav-folder-title[data-path="old" i],
+.nav-files-container .nav-folder-title[data-path$="/old" i] {
+  --mit-current-folder-icon: var(--mit-icon-folder-archive);
+  --mit-current-folder-color: var(--mit-color-lock);
+}
+
+.nav-files-container .nav-folder-title[data-path="database" i],
+.nav-files-container .nav-folder-title[data-path$="/database" i],
+.nav-files-container .nav-folder-title[data-path="databases" i],
+.nav-files-container .nav-folder-title[data-path$="/databases" i],
+.nav-files-container .nav-folder-title[data-path="db" i],
+.nav-files-container .nav-folder-title[data-path$="/db" i],
+.nav-files-container .nav-folder-title[data-path="data" i],
+.nav-files-container .nav-folder-title[data-path$="/data" i] {
+  --mit-current-folder-icon: var(--mit-icon-folder-database);
+  --mit-current-folder-color: var(--mit-color-database);
+}
+
+.nav-files-container .nav-folder-title[data-path="api" i],
+.nav-files-container .nav-folder-title[data-path$="/api" i],
+.nav-files-container .nav-folder-title[data-path="server" i],
+.nav-files-container .nav-folder-title[data-path$="/server" i],
+.nav-files-container .nav-folder-title[data-path="backend" i],
+.nav-files-container .nav-folder-title[data-path$="/backend" i],
+.nav-files-container .nav-folder-title[data-path="frontend" i],
+.nav-files-container .nav-folder-title[data-path$="/frontend" i],
+.nav-files-container .nav-folder-title[data-path="client" i],
+.nav-files-container .nav-folder-title[data-path$="/client" i] {
+  --mit-current-folder-icon: var(--mit-icon-folder-cloud);
+  --mit-current-folder-color: var(--mit-color-blue);
+}
+
+.nav-files-container .nav-folder-title[data-path=".github" i],
+.nav-files-container .nav-folder-title[data-path$="/.github" i],
+.nav-files-container .nav-folder-title[data-path=".git" i],
+.nav-files-container .nav-folder-title[data-path$="/.git" i] {
+  --mit-current-folder-icon: var(--mit-icon-folder);
+  --mit-current-folder-color: var(--mit-color-git);
+}
+
+.nav-files-container .nav-folder-title[data-path="node_modules" i],
+.nav-files-container .nav-folder-title[data-path$="/node_modules" i],
+.nav-files-container .nav-folder-title[data-path="packages" i],
+.nav-files-container .nav-folder-title[data-path$="/packages" i],
+.nav-files-container .nav-folder-title[data-path="vendor" i],
+.nav-files-container .nav-folder-title[data-path$="/vendor" i] {
+  --mit-current-folder-icon: var(--mit-icon-folder);
+  --mit-current-folder-color: var(--mit-color-package);
+}
+
+.nav-files-container .nav-folder-title[data-path="docker" i],
+.nav-files-container .nav-folder-title[data-path$="/docker" i],
+.nav-files-container .nav-folder-title[data-path=".docker" i],
+.nav-files-container .nav-folder-title[data-path$="/.docker" i] {
+  --mit-current-folder-icon: var(--mit-icon-folder);
+  --mit-current-folder-color: var(--mit-color-docker);
+}
+
+.nav-files-container .nav-folder-title[data-path="env" i],
+.nav-files-container .nav-folder-title[data-path$="/env" i],
+.nav-files-container .nav-folder-title[data-path=".env" i],
+.nav-files-container .nav-folder-title[data-path$="/.env" i],
+.nav-files-container .nav-folder-title[data-path="secrets" i],
+.nav-files-container .nav-folder-title[data-path$="/secrets" i],
+.nav-files-container .nav-folder-title[data-path="secret" i],
+.nav-files-container .nav-folder-title[data-path$="/secret" i],
+.nav-files-container .nav-folder-title[data-path="private" i],
+.nav-files-container .nav-folder-title[data-path$="/private" i] {
+  --mit-current-folder-icon: var(--mit-icon-folder-key);
+  --mit-current-folder-color: var(--mit-color-env);
+}
+
+.nav-files-container .nav-folder-title[data-path="home" i],
+.nav-files-container .nav-folder-title[data-path$="/home" i],
+.nav-files-container .nav-folder-title[data-path="root" i],
+.nav-files-container .nav-folder-title[data-path$="/root" i] {
+  --mit-current-folder-icon: var(--mit-icon-folder-home);
+  --mit-current-folder-color: var(--mit-color-folder-open);
+}
+
+.nav-files-container .nav-folder-title[data-path="people" i],
+.nav-files-container .nav-folder-title[data-path$="/people" i],
+.nav-files-container .nav-folder-title[data-path="person" i],
+.nav-files-container .nav-folder-title[data-path$="/person" i],
+.nav-files-container .nav-folder-title[data-path="contacts" i],
+.nav-files-container .nav-folder-title[data-path$="/contacts" i] {
+  --mit-current-folder-icon: var(--mit-icon-folder-users);
+  --mit-current-folder-color: var(--mit-color-pink);
+}
+
+.nav-files-container .nav-folder-title[data-path="favorites" i],
+.nav-files-container .nav-folder-title[data-path$="/favorites" i],
+.nav-files-container .nav-folder-title[data-path="starred" i],
+.nav-files-container .nav-folder-title[data-path$="/starred" i],
+.nav-files-container .nav-folder-title[data-path="important" i],
+.nav-files-container .nav-folder-title[data-path$="/important" i] {
+  --mit-current-folder-icon: var(--mit-icon-folder-star);
+  --mit-current-folder-color: var(--mit-color-folder-special);
+}
+
+.nav-files-container .nav-folder-title[data-path="bookmarks" i],
+.nav-files-container .nav-folder-title[data-path$="/bookmarks" i],
+.nav-files-container .nav-folder-title[data-path="links" i],
+.nav-files-container .nav-folder-title[data-path$="/links" i],
+.nav-files-container .nav-folder-title[data-path="references" i],
+.nav-files-container .nav-folder-title[data-path$="/references" i],
+.nav-files-container .nav-folder-title[data-path="refs" i],
+.nav-files-container .nav-folder-title[data-path$="/refs" i] {
+  --mit-current-folder-icon: var(--mit-icon-folder-link);
+  --mit-current-folder-color: var(--mit-color-blue);
+}
+
+.nav-files-container .nav-folder-title[data-path="tags" i],
+.nav-files-container .nav-folder-title[data-path$="/tags" i],
+.nav-files-container .nav-folder-title[data-path="tag" i],
+.nav-files-container .nav-folder-title[data-path$="/tag" i] {
+  --mit-current-folder-icon: var(--mit-icon-folder-tag);
+  --mit-current-folder-color: var(--mit-color-purple);
+}
+
+.nav-files-container .nav-folder-title[data-path="trash" i],
+.nav-files-container .nav-folder-title[data-path$="/trash" i],
+.nav-files-container .nav-folder-title[data-path=".trash" i],
+.nav-files-container .nav-folder-title[data-path$="/.trash" i],
+.nav-files-container .nav-folder-title[data-path="deleted" i],
+.nav-files-container .nav-folder-title[data-path$="/deleted" i] {
+  --mit-current-folder-icon: var(--mit-icon-folder-trash);
+  --mit-current-folder-color: var(--mit-color-lock);
+}
+
+/* Keep every open folder visibly folder-shaped, even after category rules. */
+.nav-files-container .nav-folder:not(.is-collapsed) > .nav-folder-title[data-path] {
+  --mit-current-folder-icon: var(--mit-icon-folder-open);
+}
+
+/* Keep Obsidian's folder chevron hit target stable. */
+.nav-files-container .nav-folder-title .collapse-icon,
+.nav-files-container .nav-folder-title .tree-item-icon {
+  flex: 0 0 var(--mit-folder-chevron-width);
+  width: var(--mit-folder-chevron-width);
+}
+
+/* Hover and active states: color/opacity changes only, no layout changes. */
+body:not(.is-grabbing) .nav-files-container .nav-file-title[data-path]:hover::before,
+.nav-files-container .nav-file-title[data-path].is-active::before {
+  opacity: var(--mit-file-icon-opacity-hover);
+}
+
+/*
+  Extension matches.
+  Use $= for extensions because data-path includes the full vault-relative path.
+*/
+.nav-files-container .nav-file-title[data-path$=".md" i] {
+  --mit-current-icon: var(--mit-icon-markdown);
+  --mit-current-color: var(--mit-color-note);
+}
+
+.nav-files-container .nav-file-title[data-path$=".canvas" i] {
+  --mit-current-icon: var(--mit-icon-canvas);
+  --mit-current-color: var(--mit-color-canvas);
+}
+
+.nav-files-container .nav-file-title[data-path$=".pdf" i] {
+  --mit-current-icon: var(--mit-icon-pdf);
+  --mit-current-color: var(--mit-color-pdf);
+}
+
+.nav-files-container .nav-file-title[data-path$=".png" i],
+.nav-files-container .nav-file-title[data-path$=".jpg" i],
+.nav-files-container .nav-file-title[data-path$=".jpeg" i],
+.nav-files-container .nav-file-title[data-path$=".gif" i],
+.nav-files-container .nav-file-title[data-path$=".webp" i],
+.nav-files-container .nav-file-title[data-path$=".svg" i] {
+  --mit-current-icon: var(--mit-icon-image);
+  --mit-current-color: var(--mit-color-image);
+}
+
+.nav-files-container .nav-file-title[data-path$=".mp4" i],
+.nav-files-container .nav-file-title[data-path$=".mov" i] {
+  --mit-current-icon: var(--mit-icon-video);
+  --mit-current-color: var(--mit-color-video);
+}
+
+.nav-files-container .nav-file-title[data-path$=".mp3" i],
+.nav-files-container .nav-file-title[data-path$=".wav" i],
+.nav-files-container .nav-file-title[data-path$=".flac" i] {
+  --mit-current-icon: var(--mit-icon-audio);
+  --mit-current-color: var(--mit-color-audio);
+}
+
+.nav-files-container .nav-file-title[data-path$=".zip" i] {
+  --mit-current-icon: var(--mit-icon-archive);
+  --mit-current-color: var(--mit-color-archive);
+}
+
+.nav-files-container .nav-file-title[data-path$=".json" i] {
+  --mit-current-icon: var(--mit-icon-json);
+  --mit-current-color: var(--mit-color-json);
+}
+
+.nav-files-container .nav-file-title[data-path$=".yaml" i],
+.nav-files-container .nav-file-title[data-path$=".yml" i],
+.nav-files-container .nav-file-title[data-path$=".toml" i] {
+  --mit-current-icon: var(--mit-icon-config);
+  --mit-current-color: var(--mit-color-config);
+}
+
+.nav-files-container .nav-file-title[data-path$=".js" i] {
+  --mit-current-icon: var(--mit-icon-javascript);
+  --mit-current-color: var(--mit-color-js);
+}
+
+.nav-files-container .nav-file-title[data-path$=".ts" i] {
+  --mit-current-icon: var(--mit-icon-typescript);
+  --mit-current-color: var(--mit-color-ts);
+}
+
+.nav-files-container .nav-file-title[data-path$=".jsx" i],
+.nav-files-container .nav-file-title[data-path$=".tsx" i] {
+  --mit-current-icon: var(--mit-icon-react);
+  --mit-current-color: var(--mit-color-react);
+}
+
+.nav-files-container .nav-file-title[data-path$=".html" i] {
+  --mit-current-icon: var(--mit-icon-html);
+  --mit-current-color: var(--mit-color-html);
+}
+
+.nav-files-container .nav-file-title[data-path$=".css" i] {
+  --mit-current-icon: var(--mit-icon-css);
+  --mit-current-color: var(--mit-color-css);
+}
+
+.nav-files-container .nav-file-title[data-path$=".scss" i] {
+  --mit-current-icon: var(--mit-icon-scss);
+  --mit-current-color: var(--mit-color-css);
+}
+
+.nav-files-container .nav-file-title[data-path$=".py" i],
+.nav-files-container .nav-file-title[data-path$=".pyw" i],
+.nav-files-container .nav-file-title[data-path$=".pyi" i] {
+  --mit-current-icon: var(--mit-icon-python);
+  --mit-current-color: var(--mit-color-python);
+}
+
+.nav-files-container .nav-file-title[data-path$=".go" i] {
+  --mit-current-icon: var(--mit-icon-go);
+  --mit-current-color: var(--mit-color-go);
+}
+
+.nav-files-container .nav-file-title[data-path$=".rs" i] {
+  --mit-current-icon: var(--mit-icon-rust);
+  --mit-current-color: var(--mit-color-rust);
+}
+
+.nav-files-container .nav-file-title[data-path$=".java" i] {
+  --mit-current-icon: var(--mit-icon-java);
+  --mit-current-color: var(--mit-color-java);
+}
+
+.nav-files-container .nav-file-title[data-path$=".c" i],
+.nav-files-container .nav-file-title[data-path$=".h" i] {
+  --mit-current-icon: var(--mit-icon-c);
+  --mit-current-color: var(--mit-color-c);
+}
+
+.nav-files-container .nav-file-title[data-path$=".cpp" i],
+.nav-files-container .nav-file-title[data-path$=".cc" i],
+.nav-files-container .nav-file-title[data-path$=".cxx" i],
+.nav-files-container .nav-file-title[data-path$=".hpp" i],
+.nav-files-container .nav-file-title[data-path$=".hh" i],
+.nav-files-container .nav-file-title[data-path$=".hxx" i] {
+  --mit-current-icon: var(--mit-icon-cpp);
+  --mit-current-color: var(--mit-color-c);
+}
+
+.nav-files-container .nav-file-title[data-path$=".sh" i],
+.nav-files-container .nav-file-title[data-path$=".zsh" i],
+.nav-files-container .nav-file-title[data-path$=".fish" i] {
+  --mit-current-icon: var(--mit-icon-shell);
+  --mit-current-color: var(--mit-color-shell);
+}
+
+/*
+  Filename matches.
+  Use exact match for root files, and $="/filename" for files inside folders.
+*/
+.nav-files-container .nav-file-title[data-path="Dockerfile" i],
+.nav-files-container .nav-file-title[data-path$="/Dockerfile" i],
+.nav-files-container .nav-file-title[data-path$=".dockerfile" i] {
+  --mit-current-icon: var(--mit-icon-docker);
+  --mit-current-color: var(--mit-color-docker);
+}
+
+.nav-files-container .nav-file-title[data-path=".env" i],
+.nav-files-container .nav-file-title[data-path$="/.env" i],
+.nav-files-container .nav-file-title[data-path^=".env." i],
+.nav-files-container .nav-file-title[data-path*="/.env." i],
+.nav-files-container .nav-file-title[data-path$=".env" i] {
+  --mit-current-icon: var(--mit-icon-env);
+  --mit-current-color: var(--mit-color-env);
+}
+
+.nav-files-container .nav-file-title[data-path=".gitignore" i],
+.nav-files-container .nav-file-title[data-path$="/.gitignore" i],
+.nav-files-container .nav-file-title[data-path=".gitattributes" i],
+.nav-files-container .nav-file-title[data-path$="/.gitattributes" i],
+.nav-files-container .nav-file-title[data-path=".gitmodules" i],
+.nav-files-container .nav-file-title[data-path$="/.gitmodules" i] {
+  --mit-current-icon: var(--mit-icon-git);
+  --mit-current-color: var(--mit-color-git);
+}
+
+.nav-files-container .nav-file-title[data-path="package.json" i],
+.nav-files-container .nav-file-title[data-path$="/package.json" i] {
+  --mit-current-icon: var(--mit-icon-package);
+  --mit-current-color: var(--mit-color-package);
+}
+
+/*
+  Common lock-file patterns. Placed after json/yaml/toml/package rules so the
+  lock icon wins when selectors overlap.
+*/
+.nav-files-container .nav-file-title[data-path$=".lock" i],
+.nav-files-container .nav-file-title[data-path$=".lockb" i],
+.nav-files-container .nav-file-title[data-path$="-lock.json" i],
+.nav-files-container .nav-file-title[data-path$="-lock.yaml" i],
+.nav-files-container .nav-file-title[data-path$="-lock.yml" i],
+.nav-files-container .nav-file-title[data-path="Cargo.lock" i],
+.nav-files-container .nav-file-title[data-path$="/Cargo.lock" i],
+.nav-files-container .nav-file-title[data-path="Gemfile.lock" i],
+.nav-files-container .nav-file-title[data-path$="/Gemfile.lock" i],
+.nav-files-container .nav-file-title[data-path="Pipfile.lock" i],
+.nav-files-container .nav-file-title[data-path$="/Pipfile.lock" i],
+.nav-files-container .nav-file-title[data-path="poetry.lock" i],
+.nav-files-container .nav-file-title[data-path$="/poetry.lock" i],
+.nav-files-container .nav-file-title[data-path="composer.lock" i],
+.nav-files-container .nav-file-title[data-path$="/composer.lock" i],
+.nav-files-container .nav-file-title[data-path="go.sum" i],
+.nav-files-container .nav-file-title[data-path$="/go.sum" i] {
+  --mit-current-icon: var(--mit-icon-lock);
+  --mit-current-color: var(--mit-color-lock);
+}
+
+/*
+  Optional monochrome mode:
+  Uncomment this block if you want every icon to follow the current theme's
+  muted text color instead of using Material Icon Theme-like colors.
+
+.nav-files-container .nav-file-title[data-path] {
+  --mit-current-color: var(--mit-color-default) !important;
+}
+*/
