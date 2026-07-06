@@ -149,6 +149,128 @@ body {
 }
 
 /*
+  Mermaid diagrams.
+  Keep rendered SVGs inside the markdown column, then open a larger scrollable
+  view from the plugin when the diagram is clicked.
+*/
+.markdown-rendered .block-language-mermaid,
+.markdown-rendered .mermaid {
+  box-sizing: border-box;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-block-end: var(--size-2-2);
+}
+
+.markdown-rendered .block-language-mermaid svg,
+.markdown-rendered .mermaid svg {
+  cursor: zoom-in;
+  display: block;
+  height: auto;
+  margin-inline: auto;
+  max-width: 100%;
+}
+
+.modal.mycss-mermaid-zoom-modal {
+  height: min(92vh, 960px);
+  max-height: 92vh;
+  max-width: 96vw;
+  width: min(96vw, 1400px);
+}
+
+.modal.mycss-mermaid-zoom-modal .modal-content {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  padding: 0;
+}
+
+.mycss-mermaid-zoom-toolbar {
+  align-items: center;
+  border-bottom: 1px solid var(--background-modifier-border);
+  display: flex;
+  flex: 0 0 auto;
+  gap: var(--size-2-3);
+  justify-content: space-between;
+  min-height: 44px;
+  padding: var(--size-2-2) var(--size-4-3);
+}
+
+.mycss-mermaid-zoom-title {
+  color: var(--text-muted);
+  flex: 1 1 auto;
+  font-size: var(--font-ui-small);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mycss-mermaid-zoom-controls {
+  align-items: center;
+  display: flex;
+  flex: 0 0 auto;
+  gap: var(--size-2-2);
+}
+
+.mycss-mermaid-zoom-button {
+  height: 28px;
+  min-width: 28px;
+  width: 28px;
+}
+
+.mycss-mermaid-zoom-text-button {
+  align-items: center;
+  background-color: var(--interactive-normal);
+  border: 0;
+  border-radius: var(--radius-s);
+  color: var(--text-normal);
+  display: inline-flex;
+  font-size: var(--font-ui-smaller);
+  height: 28px;
+  justify-content: center;
+  min-width: 44px;
+  padding-inline: var(--size-2-3);
+}
+
+.mycss-mermaid-zoom-text-button:hover {
+  background-color: var(--interactive-hover);
+}
+
+.mycss-mermaid-zoom-scale {
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+  min-width: 40px;
+  text-align: center;
+}
+
+.mycss-mermaid-zoom-viewport {
+  background-color: var(--background-primary);
+  flex: 1 1 auto;
+  overflow: auto;
+  padding: var(--size-4-4);
+}
+
+.mycss-mermaid-zoom-frame {
+  margin-inline: auto;
+  position: relative;
+}
+
+.mycss-mermaid-zoom-surface {
+  left: 0;
+  position: absolute;
+  top: 0;
+  transform-origin: top left;
+}
+
+.mycss-mermaid-zoom-surface svg {
+  cursor: default;
+  display: block;
+  max-width: none;
+}
+
+/*
   Base File Explorer row.
   .nav-file-title has data-path in current Obsidian, and contains:
   .nav-file-title-content plus, for unsupported extensions, .nav-file-tag.
