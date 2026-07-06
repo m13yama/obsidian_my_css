@@ -1,7 +1,7 @@
 {
   "id": "obsidian-my-css",
   "name": "Obsidian My CSS",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "minAppVersion": "1.7.2",
   "description": "Personal CSS tweaks for Obsidian, packaged as a lightweight plugin.",
   "author": "yuki",

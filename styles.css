@@ -6,7 +6,7 @@
   - material-icon-theme-file-icons.css
 */
 
-/* Slightly widen Obsidian's readable markdown line width. */
+/* Default readable markdown line width. The plugin setting can override this. */
 body {
   --file-line-width: 880px;
 }
