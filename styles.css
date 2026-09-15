@@ -12,13 +12,126 @@ body {
 }
 
 /*
-  Heading baselines in Reading view, Live Preview, and Source mode.
-  Put the border on the whole heading/line so wrapped text gets one baseline.
+  Compact academic note typography with Wikipedia / Vector-inspired headings.
+  Reference: https://github.com/wikimedia/mediawiki-skins-Vector/blob/master/resources/skins.vector.styles/typography.less
+  Use compact body spacing and more room around headings, with Obsidian's theme colors.
 */
 body {
-  --mycss-h1-rule-color: var(--text-accent);
+  --mycss-note-line-height: 1.4;
+  --mycss-paragraph-spacing: 0.4em;
+  --mycss-list-spacing: 0.025em;
+  --mycss-heading-title-font: "Linux Libertine", Georgia, "Times New Roman", var(--font-text);
+  --mycss-h1-rule-color: var(--background-modifier-border-hover);
   --mycss-h2-rule-color: var(--background-modifier-border-hover);
-  --mycss-heading-rule-gap: 0.25em;
+  --mycss-heading-rule-gap: 0.15em;
+  --mycss-heading-spacing-before: 0.8em;
+  --mycss-heading-spacing-after: 0.25em;
+  --mycss-subheading-spacing-before: 0.5em;
+  --mycss-h3-spacing-before: 0.5em;
+  --mycss-h3-spacing-after: 0.2em;
+}
+
+/* Vector uses a sans-serif fallback for Japanese headings. */
+body:lang(ja) {
+  --mycss-heading-title-font: var(--font-text);
+}
+
+/* Scope typography to note content so settings and other UI headings keep their style. */
+.markdown-rendered,
+.markdown-source-view.mod-cm6 {
+  --line-height-normal: var(--mycss-note-line-height);
+  --list-spacing: var(--mycss-list-spacing);
+  --h1-size: 1.6em;
+  --h2-size: 1.3em;
+  --h3-size: 1.1em;
+  --h4-size: 1em;
+  --h5-size: 1em;
+  --h6-size: 1em;
+  --h1-weight: 400;
+  --h2-weight: 600;
+  --h3-weight: 700;
+  --h4-weight: 700;
+  --h5-weight: 700;
+  --h6-weight: 700;
+  --h1-font: var(--mycss-heading-title-font);
+  --h2-font: var(--mycss-heading-title-font);
+  --h3-font: var(--font-text);
+  --h4-font: var(--font-text);
+  --h5-font: var(--font-text);
+  --h6-font: var(--font-text);
+  --h1-color: var(--text-normal);
+  --h2-color: var(--text-normal);
+  --h3-color: var(--text-normal);
+  --h4-color: var(--text-normal);
+  --h5-color: var(--text-normal);
+  --h6-color: var(--text-normal);
+  --h1-line-height: 1.3;
+  --h2-line-height: 1.3;
+  --h3-line-height: 1.4;
+  --h4-line-height: 1.4;
+  --h5-line-height: 1.4;
+  --h6-line-height: 1.4;
+}
+
+.markdown-rendered {
+  line-height: var(--line-height-normal);
+}
+
+/* Source mode keeps Obsidian's zero paragraph spacing and authored blank lines. */
+.markdown-rendered,
+.markdown-source-view.mod-cm6.is-live-preview {
+  --p-spacing: var(--mycss-paragraph-spacing);
+}
+
+.markdown-rendered :is(h1, h2, h3, h4, h5, h6),
+.markdown-source-view.mod-cm6 .cm-line.HyperMD-header {
+  --mycss-current-heading-before: var(--mycss-heading-spacing-before);
+  --mycss-current-heading-after: var(--mycss-heading-spacing-after);
+  letter-spacing: normal;
+}
+
+.markdown-rendered :is(h3, h4, h5, h6),
+.markdown-source-view.mod-cm6 .cm-line:is(.HyperMD-header-3, .HyperMD-header-4, .HyperMD-header-5, .HyperMD-header-6) {
+  --mycss-current-heading-before: var(--mycss-subheading-spacing-before);
+}
+
+.markdown-rendered h3,
+.markdown-source-view.mod-cm6 .cm-line.HyperMD-header-3 {
+  --mycss-current-heading-before: var(--mycss-h3-spacing-before);
+  --mycss-current-heading-after: var(--mycss-h3-spacing-after);
+}
+
+/* Reading view uses margins; CodeMirror heading lines use padding. */
+.markdown-rendered :is(h1, h2, h3, h4, h5, h6) {
+  --heading-spacing: var(--mycss-current-heading-before);
+  margin-block-start: var(--mycss-current-heading-before);
+  margin-block-end: var(--mycss-current-heading-after);
+}
+
+.markdown-source-view.mod-cm6 .cm-line.HyperMD-header {
+  padding-block-start: var(--mycss-current-heading-before);
+  padding-block-end: var(--mycss-current-heading-after);
+}
+
+/* Let heading margins control the gap instead of adjacent block margins. */
+.markdown-rendered :is(p, ul, ol, blockquote, pre, table, .callout):has(+ :is(h1, h2, h3, h4, h5, h6)),
+.markdown-rendered div:has(+ div:is(.el-h1, .el-h2, .el-h3, .el-h4, .el-h5, .el-h6)) > :is(p, ul, ol, blockquote, pre, table, .callout) {
+  margin-block-end: 0;
+}
+
+.markdown-rendered :is(h1, h2, h3, h4, h5, h6) + :is(p, ul, ol, blockquote, pre, table, .callout),
+.markdown-rendered div:is(.el-h1, .el-h2, .el-h3, .el-h4, .el-h5, .el-h6) + div > :is(p, ul, ol, blockquote, pre, table, .callout) {
+  margin-block-start: 0;
+}
+
+/* Preserve authored blank lines, but remove the editor's extra paragraph padding. */
+.markdown-source-view.mod-cm6 .cm-line.HyperMD-header + .cm-line:not(.HyperMD-header):not(:has(> br:only-child)) {
+  padding-top: 0;
+}
+
+/* Underlined editor headings need their following gap on the text after the rule. */
+.markdown-source-view.mod-cm6 .cm-line:is(.HyperMD-header-1, .HyperMD-header-2) + .cm-line:not(.HyperMD-header):not(:has(> br:only-child)) {
+  padding-top: var(--mycss-heading-spacing-after);
 }
 
 .markdown-rendered h1,
@@ -30,12 +143,85 @@ body {
 
 .markdown-rendered h1,
 .markdown-source-view.mod-cm6 .cm-line.HyperMD-header-1 {
-  border-bottom: 2px solid var(--mycss-h1-rule-color);
+  border-bottom: 1px solid var(--mycss-h1-rule-color);
 }
 
 .markdown-rendered h2,
 .markdown-source-view.mod-cm6 .cm-line.HyperMD-header-2 {
   border-bottom: 1px solid var(--mycss-h2-rule-color);
+}
+
+/* Center note images and embedded image containers. */
+.markdown-rendered img:not(.cm-widgetBuffer),
+.markdown-source-view.mod-cm6.is-live-preview .image-embed img {
+  display: block;
+  margin-inline: auto;
+}
+
+.markdown-rendered .image-embed,
+.markdown-source-view.mod-cm6.is-live-preview .image-embed {
+  display: block;
+  margin-inline: auto;
+  max-width: 100%;
+  width: fit-content;
+}
+
+/* Obsidian forces margin: 0 !important on direct CodeMirror content children. */
+.markdown-source-view.mod-cm6.is-live-preview .cm-content > .image-embed {
+  margin-inline: auto !important;
+}
+
+/* Center the whole table; keep cell alignment and the editor's scroll container. */
+.markdown-rendered table,
+.markdown-source-view.mod-cm6 .cm-table-widget .table-wrapper {
+  margin-inline: auto;
+}
+
+/* Code typography and colors; keep the theme's existing borders, corners, and padding. */
+body {
+  --mycss-code-block-size: 0.82em;
+  --mycss-code-block-line-height: 1.3;
+  --mycss-code-block-background: var(--background-primary-alt);
+  --mycss-inline-code-size: 0.85em;
+  --mycss-inline-code-color: color-mix(in srgb, var(--color-pink) 75%, var(--text-normal));
+  --mycss-inline-code-background: var(--background-secondary);
+}
+
+/* Editor code backgrounds are separate elements from the text lines. */
+.markdown-rendered pre,
+.markdown-source-view.mod-cm6 :is(.HyperMD-codeblock-bg, .HyperMD-codeblock-begin-bg, .HyperMD-codeblock-end-bg) {
+  --code-background: var(--mycss-code-block-background);
+}
+
+.markdown-rendered pre {
+  --code-size: 1em;
+  font-size: var(--mycss-code-block-size);
+  line-height: var(--mycss-code-block-line-height);
+}
+
+/* Scale the block once, including syntax-highlighted code. */
+.markdown-rendered pre code {
+  font-size: inherit;
+  line-height: inherit;
+}
+
+.markdown-source-view.mod-cm6 .cm-line.HyperMD-codeblock {
+  --code-size: var(--mycss-code-block-size);
+  line-height: var(--mycss-code-block-line-height);
+}
+
+.markdown-rendered code:not(pre code),
+.markdown-source-view.mod-cm6 .cm-line:not(.HyperMD-codeblock) .cm-inline-code {
+  --code-size: var(--mycss-inline-code-size);
+  --code-normal: var(--mycss-inline-code-color);
+  --code-background: var(--mycss-inline-code-background);
+  line-height: inherit;
+}
+
+/* Avoid shrinking nested tokens and already scaled raw Markdown table rows twice. */
+.markdown-source-view.mod-cm6 .cm-line:not(.HyperMD-codeblock) .cm-inline-code .cm-inline-code,
+.markdown-source-view.mod-cm6 .cm-line.HyperMD-table-row .cm-inline-code {
+  --code-size: 1em;
 }
 
 /*
