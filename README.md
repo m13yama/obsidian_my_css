@@ -68,7 +68,7 @@ The icon CSS expects a Nerd Font such as `PlemolJP Console NF` to be installed o
 ## Install With BRAT
 
 1. Push this repository to GitHub.
-2. Create a GitHub release whose tag matches `manifest.json` `version`, for example `0.1.3`.
+2. Create a GitHub release whose tag matches `manifest.json` `version`, for example `0.1.4`.
 3. Attach these release assets:
    - `manifest.json`
    - `main.js`
@@ -81,8 +81,8 @@ The included GitHub Actions workflow creates the release assets automatically wh
 ## Release
 
 ```sh
-git tag 0.1.3
-git push origin 0.1.3
+git tag 0.1.4
+git push origin 0.1.4
 ```
 
 Before the next release, update the `version` field in `manifest.json`, commit it, then tag the same version.
