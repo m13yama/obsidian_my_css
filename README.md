@@ -10,7 +10,6 @@ Personal Obsidian CSS packaged as a lightweight community plugin so it can be in
 - Horizontally centered images and tables in Reading view and Live Preview.
 - Smaller code blocks and pink inline code with theme-aware colors.
 - Mermaid diagrams that fit the markdown column and open in a larger zoomable view when clicked.
-- Material Icon Theme-like file and folder icons for the file explorer.
 
 The markdown line width can be changed from the plugin settings. It accepts CSS
 width values such as `880px`, `72rem`, `calc(100% - 2rem)`, and `100%`. A bare
@@ -63,12 +62,13 @@ Rendered Mermaid diagrams are constrained to the markdown column so they do not
 spill outside the page. Click a diagram to open a larger scrollable view with
 zoom controls.
 
-The icon CSS expects a Nerd Font such as `PlemolJP Console NF` to be installed on the machine running Obsidian.
+Machine-specific fonts and file explorer icons are configured separately with
+local CSS snippets and are not bundled with this plugin.
 
 ## Install With BRAT
 
 1. Push this repository to GitHub.
-2. Create a GitHub release whose tag matches `manifest.json` `version`, for example `0.1.4`.
+2. Create a GitHub release whose tag matches `manifest.json` `version`, for example `0.1.5`.
 3. Attach these release assets:
    - `manifest.json`
    - `main.js`
@@ -81,8 +81,8 @@ The included GitHub Actions workflow creates the release assets automatically wh
 ## Release
 
 ```sh
-git tag 0.1.4
-git push origin 0.1.4
+git tag 0.1.5
+git push origin 0.1.5
 ```
 
 Before the next release, update the `version` field in `manifest.json`, commit it, then tag the same version.
