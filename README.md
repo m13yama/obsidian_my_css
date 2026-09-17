@@ -8,8 +8,8 @@ Personal Obsidian CSS packaged as a lightweight community plugin so it can be in
 - Compact academic typography with tighter body text, paragraphs, and lists.
 - Wikipedia-inspired H1–H6 headings with thin H1/H2 dividers in Reading view, Live Preview, and Source mode.
 - Horizontally centered images and tables in Reading view and Live Preview.
-- Smaller code blocks and pink inline code with theme-aware colors.
-- Non-italic LaTeX source in Source mode and Live Preview, with syntax highlighting preserved.
+- Smaller code blocks in Reading view and pink inline code with theme-aware colors.
+- Body-sized code and non-italic LaTeX source in Source mode and Live Preview, with syntax highlighting preserved.
 - Mermaid diagrams that fit the markdown column and open in a larger zoomable view when clicked.
 
 The markdown line width can be changed from the plugin settings. It accepts CSS
@@ -52,12 +52,17 @@ Images and tables are centered within their containing note column. Table cell
 text keeps its existing alignment, and Live Preview tables retain their editing
 controls and horizontal scroll container.
 
-Code blocks use `0.82em` text with a `1.3` line height and the theme's subtle
+In Reading view, code blocks use `0.82em` text with a `1.3` line height and the theme's subtle
 alternate background. Inline code uses `0.85em` text, pink lettering, and the
 theme's neutral secondary background, with line height inherited from the
 surrounding text. Pink is mixed with the theme's text color to suit light and dark modes.
 Existing border, corner, and padding styles are kept. Code size and color tuning
 variables (`--mycss-code-block-*` and `--mycss-inline-code-*`) are in `styles.css`.
+
+In Source mode and Live Preview, code blocks, inline code, and LaTeX source use
+`1em` text to match the surrounding body text and follow Obsidian's font size
+setting. This also applies to rendered code in Live Preview. LaTeX source stays
+non-italic, including inline and display-math source.
 
 Rendered Mermaid diagrams are constrained to the markdown column so they do not
 spill outside the page. Click a diagram to open a larger scrollable view with
@@ -69,7 +74,7 @@ local CSS snippets and are not bundled with this plugin.
 ## Install With BRAT
 
 1. Push this repository to GitHub.
-2. Create a GitHub release whose tag matches `manifest.json` `version`, for example `0.1.6`.
+2. Create a GitHub release whose tag matches `manifest.json` `version`, for example `0.1.7`.
 3. Attach these release assets:
    - `manifest.json`
    - `main.js`
@@ -82,8 +87,8 @@ The included GitHub Actions workflow creates the release assets automatically wh
 ## Release
 
 ```sh
-git tag 0.1.6
-git push origin 0.1.6
+git tag 0.1.7
+git push origin 0.1.7
 ```
 
 Before the next release, update the `version` field in `manifest.json`, commit it, then tag the same version.

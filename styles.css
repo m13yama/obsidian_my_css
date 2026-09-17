@@ -185,6 +185,13 @@ body {
   --mycss-inline-code-background: var(--background-secondary);
 }
 
+/* Match body text in both editor modes, including rendered Live Preview code. */
+.markdown-source-view.mod-cm6 {
+  --code-size: 1em;
+  --mycss-code-block-size: 1em;
+  --mycss-inline-code-size: 1em;
+}
+
 /* Editor code backgrounds are separate elements from the text lines. */
 .markdown-rendered pre,
 .markdown-source-view.mod-cm6 :is(.HyperMD-codeblock-bg, .HyperMD-codeblock-begin-bg, .HyperMD-codeblock-end-bg) {
@@ -222,8 +229,9 @@ body {
   --code-size: 1em;
 }
 
-/* Keep LaTeX source upright in both editor modes while preserving syntax colors. */
+/* Keep LaTeX source upright and body-sized, overriding Obsidian's fixed display-math size. */
 .markdown-source-view.mod-cm6 :is(.cm-math, .hmd-fold-math-placeholder) {
+  font-size: 1em;
   font-style: normal;
 }
 
