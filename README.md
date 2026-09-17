@@ -9,6 +9,7 @@ Personal Obsidian CSS packaged as a lightweight community plugin so it can be in
 - Wikipedia-inspired H1–H6 headings with thin H1/H2 dividers in Reading view, Live Preview, and Source mode.
 - Horizontally centered images and tables in Reading view and Live Preview.
 - Smaller code blocks and pink inline code with theme-aware colors.
+- Non-italic LaTeX source in Source mode and Live Preview, with syntax highlighting preserved.
 - Mermaid diagrams that fit the markdown column and open in a larger zoomable view when clicked.
 
 The markdown line width can be changed from the plugin settings. It accepts CSS
@@ -68,7 +69,7 @@ local CSS snippets and are not bundled with this plugin.
 ## Install With BRAT
 
 1. Push this repository to GitHub.
-2. Create a GitHub release whose tag matches `manifest.json` `version`, for example `0.1.5`.
+2. Create a GitHub release whose tag matches `manifest.json` `version`, for example `0.1.6`.
 3. Attach these release assets:
    - `manifest.json`
    - `main.js`
@@ -81,8 +82,8 @@ The included GitHub Actions workflow creates the release assets automatically wh
 ## Release
 
 ```sh
-git tag 0.1.5
-git push origin 0.1.5
+git tag 0.1.6
+git push origin 0.1.6
 ```
 
 Before the next release, update the `version` field in `manifest.json`, commit it, then tag the same version.

@@ -222,6 +222,11 @@ body {
   --code-size: 1em;
 }
 
+/* Keep LaTeX source upright in both editor modes while preserving syntax colors. */
+.markdown-source-view.mod-cm6 :is(.cm-math, .hmd-fold-math-placeholder) {
+  font-style: normal;
+}
+
 /*
   Mermaid diagrams.
   Keep rendered SVGs inside the markdown column, then open a larger scrollable
