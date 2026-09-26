@@ -1,0 +1,11 @@
+{
+  "name": "obsidian-my-css",
+  "version": "0.2.0",
+  "private": true,
+  "scripts": {
+    "test": "node --check main.js && node tests/obsidian.cjs"
+  },
+  "devDependencies": {
+    "playwright": "1.61.1"
+  }
+}

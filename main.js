@@ -1,8 +1,160 @@
-const { Modal, Notice, Plugin, PluginSettingTab, Setting, setIcon } = require("obsidian");
+const { Modal, Notice, Plugin, PluginSettingTab, Setting, setIcon, editorLivePreviewField } = require("obsidian");
+const { Prec } = require("@codemirror/state");
+const { Decoration, EditorView, GutterMarker, ViewPlugin, gutter } = require("@codemirror/view");
 
 const DEFAULT_SETTINGS = {
   markdownLineWidth: "880px",
+  sourceEditorEnabled: true,
+  sourceLineWrap: true,
+  sourceLineNumbers: true,
+  sourceMonospace: true,
+  sourceHighlightActiveLine: true,
+  sourceShowRulers: false,
+  sourceRulerColumns: "80, 120",
 };
+
+function parseRulerColumns(value) {
+  const parts = String(value ?? "").trim().split(/[\s,、]+/);
+  if (parts.length > 10 || parts.some((part) => !/^\d+$/.test(part))) return null;
+  const columns = parts.map(Number);
+  if (columns.some((column) => column < 1 || column > 1000)) return null;
+  return [...new Set(columns)].sort((a, b) => a - b);
+}
+
+function isSourceEditor(state) {
+  // Only Markdown source editors have this field set explicitly to false.
+  return state.field(editorLivePreviewField, false) === false;
+}
+
+class SourceLineNumber extends GutterMarker {
+  constructor(number, active = false) {
+    super();
+    this.number = number;
+    this.elementClass = active ? "mycss-active-line-number" : "";
+  }
+
+  eq(other) {
+    return this.number === other.number && this.elementClass === other.elementClass;
+  }
+
+  toDOM(view) {
+    return view.dom.ownerDocument.createTextNode(String(this.number));
+  }
+}
+
+function sourceEditorExtension(settings) {
+  if (!settings.sourceEditorEnabled) return [];
+
+  const classes = [
+    "mycss-source-editor",
+    settings.sourceLineWrap ? "mycss-source-wrap" : "mycss-source-nowrap",
+    settings.sourceLineNumbers ? "mycss-source-numbers" : "mycss-source-no-numbers",
+    ...(settings.sourceMonospace ? ["mycss-source-monospace"] : []),
+  ].join(" ");
+  const columns = settings.sourceShowRulers ? parseRulerColumns(settings.sourceRulerColumns) : [];
+
+  return [
+    EditorView.editorAttributes.of((view) => isSourceEditor(view.state) ? { class: classes } : {}),
+    // Use a separate gutter so Live Preview still follows Obsidian's own setting.
+    Prec.high(gutter({
+      class: "mycss-source-line-numbers",
+      lineMarker(view, line) {
+        if (!settings.sourceLineNumbers || !isSourceEditor(view.state)) return null;
+        const number = view.state.doc.lineAt(line.from).number;
+        const active = view.state.doc.lineAt(view.state.selection.main.head).number === number;
+        return new SourceLineNumber(number, active);
+      },
+      lineMarkerChange: (update) => update.selectionSet ||
+        isSourceEditor(update.startState) !== isSourceEditor(update.state),
+      initialSpacer: (view) => new SourceLineNumber("9".repeat(String(view.state.doc.lines).length)),
+      updateSpacer: (spacer, update) => {
+        const number = "9".repeat(String(update.state.doc.lines).length);
+        return spacer.number === number ? spacer : new SourceLineNumber(number);
+      },
+      domEventHandlers: {
+        mousedown(view, line, event) {
+          if (event.button !== 0 || !isSourceEditor(view.state)) return false;
+          const from = view.state.doc.lineAt(line.from).from;
+          const to = view.state.doc.lineAt(line.from).to;
+          view.dispatch({ selection: { anchor: from, head: Math.min(to + 1, view.state.doc.length) } });
+          view.focus();
+          event.preventDefault();
+          return true;
+        },
+      },
+    })),
+    EditorView.decorations.of((view) => {
+      if (!settings.sourceHighlightActiveLine || !isSourceEditor(view.state)) return Decoration.none;
+      const positions = [...new Set(view.state.selection.ranges
+        .filter((range) => range.empty)
+        .map((range) => view.state.doc.lineAt(range.head).from))].sort((a, b) => a - b);
+      return Decoration.set(positions.map((position) =>
+        Decoration.line({ class: "mycss-source-active-line" }).range(position)));
+    }),
+    ViewPlugin.fromClass(class {
+      constructor(view) {
+        this.view = view;
+        this.measureContext = view.dom.ownerDocument.createElement("canvas").getContext("2d");
+        this.overlay = view.dom.ownerDocument.createElement("div");
+        this.overlay.className = "mycss-source-rulers";
+        this.overlay.setAttribute("aria-hidden", "true");
+        this.lines = columns.map(() => {
+          const line = view.dom.ownerDocument.createElement("div");
+          line.className = "mycss-source-ruler";
+          this.overlay.appendChild(line);
+          return line;
+        });
+        view.dom.appendChild(this.overlay);
+        this.measure();
+      }
+
+      update(update) {
+        if (update.geometryChanged || update.transactions.length) this.measure();
+      }
+
+      measure() {
+        this.view.requestMeasure({
+          key: this,
+          read: (view) => {
+            if (!columns.length || !isSourceEditor(view.state) || !view.inView) return null;
+            const editor = view.dom.getBoundingClientRect();
+            const content = view.contentDOM.getBoundingClientRect();
+            const scroller = view.scrollDOM.getBoundingClientRect();
+            const firstLine = view.contentDOM.querySelector(".cm-line");
+            const win = view.dom.ownerDocument.defaultView;
+            const padding = firstLine ? parseFloat(win.getComputedStyle(firstLine).paddingLeft) || 0 : 0;
+            // CodeMirror can retain Live Preview's cached character width after a
+            // mode change. Measure the currently applied font for accurate rulers.
+            const font = win.getComputedStyle(view.contentDOM);
+            this.measureContext.font = font.font;
+            const characterWidth = this.measureContext.measureText("0000000000").width / 10 +
+              (parseFloat(font.letterSpacing) || 0);
+            const gutters = view.dom.querySelector(".cm-gutters");
+            const left = Math.max(scroller.left, gutters?.getBoundingClientRect().right ?? scroller.left);
+            return {
+              left: left - editor.left,
+              top: Math.max(0, content.top - editor.top),
+              right: Math.max(0, editor.right - scroller.left - view.scrollDOM.clientWidth),
+              positions: columns.map((column) => content.left + padding + column * characterWidth - left),
+            };
+          },
+          write: (layout) => {
+            this.overlay.hidden = !layout;
+            if (!layout) return;
+            this.overlay.style.left = `${layout.left}px`;
+            this.overlay.style.top = `${layout.top}px`;
+            this.overlay.style.right = `${layout.right}px`;
+            this.lines.forEach((line, index) => { line.style.left = `${layout.positions[index]}px`; });
+          },
+        });
+      }
+
+      destroy() {
+        this.overlay.remove();
+      }
+    }, { eventHandlers: { scroll() { this.measure(); } } }),
+  ];
+}
 
 const MERMAID_SVG_SELECTOR = ".block-language-mermaid svg, .mermaid svg";
 const MERMAID_ZOOM_MIN = 0.25;
@@ -123,9 +275,21 @@ function createMermaidZoomIconButton(parentEl, icon, label) {
 module.exports = class ObsidianMyCssPlugin extends Plugin {
   async onload() {
     await this.loadSettings();
+    this.sourceExtensions = [];
+    this.registerEditorExtension(this.sourceExtensions);
     this.applySettings();
     this.addSettingTab(new ObsidianMyCssSettingTab(this.app, this));
     this.registerDomEvent(document, "click", (event) => this.openMermaidZoom(event));
+    this.addCommand({
+      id: "toggle-source-line-wrap",
+      name: "Toggle source mode line wrapping",
+      callback: () => this.setSourceSetting("sourceLineWrap", !this.settings.sourceLineWrap),
+    });
+    this.addCommand({
+      id: "toggle-source-rulers",
+      name: "Toggle source mode rulers",
+      callback: () => this.setSourceSetting("sourceShowRulers", !this.settings.sourceShowRulers),
+    });
   }
 
   onunload() {
@@ -139,6 +303,12 @@ module.exports = class ObsidianMyCssPlugin extends Plugin {
     this.settings.markdownLineWidth = isValidCssWidth(normalizedLineWidth)
       ? normalizedLineWidth
       : DEFAULT_SETTINGS.markdownLineWidth;
+
+    for (const [key, value] of Object.entries(DEFAULT_SETTINGS)) {
+      if (typeof value === "boolean" && typeof this.settings[key] !== "boolean") this.settings[key] = value;
+    }
+    const columns = parseRulerColumns(this.settings.sourceRulerColumns);
+    this.settings.sourceRulerColumns = columns ? columns.join(", ") : DEFAULT_SETTINGS.sourceRulerColumns;
   }
 
   async saveSettings() {
@@ -147,6 +317,24 @@ module.exports = class ObsidianMyCssPlugin extends Plugin {
 
   applySettings() {
     document.body.style.setProperty("--file-line-width", this.settings.markdownLineWidth);
+    this.sourceExtensions.splice(0, this.sourceExtensions.length, sourceEditorExtension({ ...this.settings }));
+    this.app.workspace.updateOptions();
+  }
+
+  async setSourceSetting(key, value) {
+    this.settings[key] = value;
+    this.applySettings();
+    await this.saveSettings();
+  }
+
+  async setSourceRulerColumns(value) {
+    const columns = parseRulerColumns(value);
+    if (!columns) {
+      new Notice("Enter up to 10 columns between 1 and 1000, separated by commas (for example, 80, 120).");
+      return false;
+    }
+    await this.setSourceSetting("sourceRulerColumns", columns.join(", "));
+    return true;
   }
 
   async setMarkdownLineWidth(value) {
@@ -234,6 +422,54 @@ class ObsidianMyCssSettingTab extends PluginSettingTab {
             lineWidthInput.setValue(this.plugin.settings.markdownLineWidth);
           });
       });
+
+    containerEl.createEl("h3", { text: "Source editor" });
+    const addToggle = (name, description, key) => new Setting(containerEl)
+      .setName(name)
+      .setDesc(description)
+      .addToggle((toggle) => toggle.setValue(this.plugin.settings[key])
+        .onChange((value) => this.plugin.setSourceSetting(key, value)));
+
+    addToggle("Enable source editor layout",
+      "Use the full pane width and align source text and gutters to the left. These settings apply only to Source mode.",
+      "sourceEditorEnabled");
+    new Setting(containerEl)
+      .setName("Line wrapping")
+      .setDesc("Wrap at the right edge of the editor, or keep long lines on one row and scroll horizontally.")
+      .addDropdown((dropdown) => dropdown
+        .addOption("wrap", "Wrap at editor edge")
+        .addOption("off", "No wrapping (horizontal scroll)")
+        .setValue(this.plugin.settings.sourceLineWrap ? "wrap" : "off")
+        .onChange((value) => this.plugin.setSourceSetting("sourceLineWrap", value === "wrap")));
+    addToggle("Line numbers", "Show line numbers at the left edge. Click a number to select that line.", "sourceLineNumbers");
+    addToggle("Monospace font", "Use Obsidian's monospace font with uniform heading and text sizes for editing source.", "sourceMonospace");
+    addToggle("Highlight current line", "Subtly highlight the line containing the cursor.", "sourceHighlightActiveLine");
+    addToggle("Show column rulers", "Display vertical guides at the configured columns.", "sourceShowRulers");
+
+    let rulerInput;
+    const applyColumns = async () => {
+      if (await this.plugin.setSourceRulerColumns(rulerInput.getValue())) {
+        rulerInput.setValue(this.plugin.settings.sourceRulerColumns);
+      }
+    };
+    new Setting(containerEl)
+      .setName("Ruler columns")
+      .setDesc("Comma-separated columns, for example 80, 120. Each guide follows that many half-width characters; use a monospace font for alignment. Up to 10 guides, from 1 to 1000.")
+      .addText((text) => {
+        rulerInput = text;
+        text.setPlaceholder(DEFAULT_SETTINGS.sourceRulerColumns).setValue(this.plugin.settings.sourceRulerColumns);
+        text.inputEl.addEventListener("keydown", (event) => {
+          if (event.key === "Enter") {
+            event.preventDefault();
+            void applyColumns();
+          }
+        });
+      })
+      .addButton((button) => button.setButtonText("Apply").onClick(applyColumns))
+      .addButton((button) => button.setButtonText("Reset").onClick(async () => {
+        await this.plugin.setSourceRulerColumns(DEFAULT_SETTINGS.sourceRulerColumns);
+        rulerInput.setValue(this.plugin.settings.sourceRulerColumns);
+      }));
   }
 }
 

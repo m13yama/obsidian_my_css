@@ -235,6 +235,143 @@ body {
   font-style: normal;
 }
 
+/* Source-only editor layout. Attributes disappear when switching to Live Preview. */
+.markdown-source-view.mod-cm6 .mycss-source-editor {
+  --file-line-width: 100%;
+  --file-folding-offset: 0px;
+}
+
+.markdown-source-view.mod-cm6 .cm-editor.mycss-source-editor > .cm-scroller {
+  padding: 8px 12px 16px 0;
+  overflow-x: auto;
+}
+
+.markdown-source-view.mod-cm6 .mycss-source-editor .cm-sizer {
+  max-width: none;
+  margin-inline: 0;
+  width: 100%;
+}
+
+.markdown-source-view.mod-cm6 .mycss-source-editor .cm-content,
+.markdown-source-view.mod-cm6 .mycss-source-editor .cm-line {
+  max-width: none;
+}
+
+.markdown-source-view.mod-cm6 .mycss-source-editor .cm-contentContainer {
+  min-width: 0;
+}
+
+.markdown-source-view.mod-cm6 .mycss-source-editor .cm-line {
+  padding-inline: 6px;
+}
+
+.markdown-source-view.mod-cm6 .mycss-source-wrap .cm-content {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+
+.markdown-source-view.mod-cm6 .mycss-source-nowrap .cm-content,
+.markdown-source-view.mod-cm6 .mycss-source-nowrap .cm-line {
+  white-space: pre;
+  overflow-wrap: normal;
+  word-break: normal;
+}
+
+.markdown-source-view.mod-cm6 .mycss-source-nowrap .cm-content {
+  flex-shrink: 0;
+  width: max-content;
+  min-width: 0;
+}
+
+/* The native gutter continues to follow Obsidian's setting outside Source mode. */
+/* CodeMirror sets gutter display with !important, so visibility overrides must too. */
+.markdown-source-view.mod-cm6 .cm-editor .mycss-source-line-numbers,
+.markdown-source-view.mod-cm6 .mycss-source-editor .cm-lineNumbers {
+  display: none !important;
+}
+
+.markdown-source-view.mod-cm6 .mycss-source-numbers .mycss-source-line-numbers {
+  display: flex !important;
+}
+
+/* An otherwise empty gutter must not introduce a margin in Live Preview. */
+.markdown-source-view.mod-cm6 .cm-editor:not(.mycss-source-numbers) .cm-gutters:has(> .mycss-source-line-numbers):not(:has(> .cm-gutter:not(.mycss-source-line-numbers))) {
+  display: none !important;
+}
+
+.markdown-source-view.mod-cm6 .mycss-source-editor .cm-gutters {
+  position: sticky;
+  left: 0;
+  margin-inline-end: 0;
+  background-color: var(--background-primary);
+  border-right: 1px solid var(--background-modifier-border) !important;
+  font-family: var(--font-monospace);
+  font-size: var(--font-text-size);
+}
+
+.markdown-source-view.mod-cm6 .mycss-source-line-numbers .cm-gutterElement {
+  min-width: 3ch;
+  padding-inline: 8px;
+  text-align: right;
+  cursor: default;
+}
+
+.mycss-source-line-numbers .mycss-active-line-number {
+  color: var(--text-normal);
+}
+
+.markdown-source-view.mod-cm6 .mycss-source-editor .mycss-source-active-line {
+  background-color: var(--background-primary-alt);
+}
+
+/* Uniform source typography keeps text columns and line numbers aligned. */
+.markdown-source-view.mod-cm6 .mycss-source-monospace {
+  --h1-size: 1em;
+  --h2-size: 1em;
+  --h3-size: 1em;
+  --h4-size: 1em;
+  --h5-size: 1em;
+  --h6-size: 1em;
+  --h1-font: var(--font-monospace);
+  --h2-font: var(--font-monospace);
+  --h3-font: var(--font-monospace);
+  --h4-font: var(--font-monospace);
+  --h5-font: var(--font-monospace);
+  --h6-font: var(--font-monospace);
+}
+
+.markdown-source-view.mod-cm6 .mycss-source-monospace .cm-scroller,
+.markdown-source-view.mod-cm6 .mycss-source-monospace .cm-line {
+  font-family: var(--font-monospace);
+}
+
+.markdown-source-view.mod-cm6 .mycss-source-monospace .cm-line {
+  font-size: var(--font-text-size);
+  line-height: var(--mycss-note-line-height);
+  padding-block: 0 !important;
+  border-block: 0 !important;
+}
+
+.mycss-source-rulers {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.mycss-source-rulers[hidden] {
+  display: none;
+}
+
+.mycss-source-ruler {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-left: 1px solid var(--background-modifier-border-hover);
+}
+
 /*
   Mermaid diagrams.
   Keep rendered SVGs inside the markdown column, then open a larger scrollable

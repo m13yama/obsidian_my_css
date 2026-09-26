@@ -6,15 +6,48 @@ Personal Obsidian CSS packaged as a lightweight community plugin so it can be in
 
 - Wider readable markdown line width.
 - Compact academic typography with tighter body text, paragraphs, and lists.
-- Wikipedia-inspired H1–H6 headings with thin H1/H2 dividers in Reading view, Live Preview, and Source mode.
+- Wikipedia-inspired H1–H6 headings with thin H1/H2 dividers in Reading view and Live Preview, and in Source mode when its monospace option is disabled.
 - Horizontally centered images and tables in Reading view and Live Preview.
 - Smaller code blocks in Reading view and pink inline code with theme-aware colors.
 - Body-sized code and non-italic LaTeX source in Source mode and Live Preview, with syntax highlighting preserved.
 - Mermaid diagrams that fit the markdown column and open in a larger zoomable view when clicked.
+- A full-width Source editor with left-aligned line numbers, optional wrapping,
+  column rulers, a monospace font, and current-line highlighting.
 
 The markdown line width can be changed from the plugin settings. It accepts CSS
 width values such as `880px`, `72rem`, `calc(100% - 2rem)`, and `100%`. A bare
 number is treated as pixels.
+
+## Source Editor
+
+Open **Settings → Obsidian My CSS → Source editor**. The source layout uses the
+full pane width, with line numbers against the left edge, even when Obsidian's
+**Readable line length** setting is enabled. These options apply to Source mode;
+Reading view and Live Preview keep their existing layout and typography.
+
+| Setting | Default | Behavior |
+| --- | --- | --- |
+| Enable source editor layout | On | Full width with a small gap between the gutter and source text. Turn off to restore the original source layout. |
+| Line wrapping | Wrap at editor edge | Choose wrapping or a single row per source line with horizontal scrolling. |
+| Line numbers | On | Source-only line numbers that remain visible during horizontal scrolling. Click a number to select the line. Live Preview follows Obsidian's own line-number setting. |
+| Monospace font | On | Obsidian's monospace font and uniform text/heading sizes, without heading dividers or extra heading spacing. |
+| Highlight current line | On | A subtle background behind the cursor's line. |
+| Show column rulers | Off | Vertical guides at the configured columns. |
+| Ruler columns | `80, 120` | Up to 10 comma-separated column values from 1 to 1000. Press Apply or Enter to save. |
+
+Ruler columns count half-width character cells from the start of a line; for
+example, `80` places a guide after 80 cells. A monospace font provides consistent
+alignment. Japanese full-width characters typically occupy two cells, and tabs
+follow the editor's tab stops. Guides move with horizontal scrolling and never
+change the Markdown or insert line breaks.
+
+The command palette includes **Toggle source mode line wrapping** and
+**Toggle source mode rulers**. Assign hotkeys in Obsidian's Hotkeys settings if
+desired. Changes apply immediately to open source editors and are saved across
+restarts. The source editor layout must be enabled for these options to take
+effect.
+
+## Note Typography
 
 Note text uses a `1.4` line height, with `0.4em` paragraph margins in Reading view
 and rendered Live Preview content. List items have `0.025em` of vertical padding
@@ -23,7 +56,8 @@ on each side. These are controlled by `--mycss-note-line-height`,
 Obsidian's font size setting.
 
 Headings take their cues from [Wikipedia's Vector typography](https://github.com/wikimedia/mediawiki-skins-Vector/blob/master/resources/skins.vector.styles/typography.less),
-adapted to Obsidian's theme colors and an academic layout.
+adapted to Obsidian's theme colors and an academic layout. Source mode uses
+uniform heading sizes when its Monospace font option is enabled.
 
 | Heading | Size | Weight | Decoration |
 | --- | --- | --- | --- |
@@ -74,7 +108,7 @@ local CSS snippets and are not bundled with this plugin.
 ## Install With BRAT
 
 1. Push this repository to GitHub.
-2. Create a GitHub release whose tag matches `manifest.json` `version`, for example `0.1.7`.
+2. Create a GitHub release whose tag matches `manifest.json` `version`, for example `0.2.0`.
 3. Attach these release assets:
    - `manifest.json`
    - `main.js`
@@ -87,8 +121,26 @@ The included GitHub Actions workflow creates the release assets automatically wh
 ## Release
 
 ```sh
-git tag 0.1.7
-git push origin 0.1.7
+git tag 0.2.0
+git push origin 0.2.0
 ```
 
-Before the next release, update the `version` field in `manifest.json`, commit it, then tag the same version.
+Before the next release, update the version in `manifest.json`, `package.json`, and
+`package-lock.json`, commit the changes, then tag the same version.
+
+## Verify Changes
+
+No build step is required; CodeMirror is supplied by Obsidian at runtime.
+With Node.js 18+ and Obsidian installed, run:
+
+```sh
+npm ci
+npm test
+```
+
+The smoke test launches Obsidian with a disposable profile and vault under the
+system temporary directory. It checks source layout, wrapping, Japanese text,
+line numbers, rulers, mode switching, and setting persistence. It never attaches
+to an existing Obsidian session. On Linux, the default executable is
+`/opt/Obsidian/obsidian`; set `OBSIDIAN_BIN` to override it. Test screenshots are
+saved under the temporary directory printed by the test.
