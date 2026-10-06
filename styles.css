@@ -22,10 +22,10 @@ body {
   --mycss-h1-rule-color: var(--background-modifier-border-hover);
   --mycss-h2-rule-color: var(--background-modifier-border-hover);
   --mycss-heading-rule-gap: 0.15em;
-  --mycss-heading-spacing-before: 0.8em;
+  --mycss-heading-spacing-before: 1.2em;
   --mycss-heading-spacing-after: 0.25em;
-  --mycss-subheading-spacing-before: 0.5em;
-  --mycss-h3-spacing-before: 0.5em;
+  --mycss-subheading-spacing-before: 0.8em;
+  --mycss-h3-spacing-before: 0.8em;
   --mycss-h3-spacing-after: 0.2em;
 }
 
@@ -46,7 +46,7 @@ body:lang(ja) {
   --h5-size: 1em;
   --h6-size: 1em;
   --h1-weight: 400;
-  --h2-weight: 600;
+  --h2-weight: 400;
   --h3-weight: 700;
   --h4-weight: 700;
   --h5-weight: 700;
