@@ -46,11 +46,11 @@ body:lang(ja) {
   --h5-size: 1em;
   --h6-size: 1em;
   --h1-weight: 400;
-  --h2-weight: 600;
-  --h3-weight: 700;
-  --h4-weight: 700;
-  --h5-weight: 700;
-  --h6-weight: 700;
+  --h2-weight: 400;
+  --h3-weight: 600;
+  --h4-weight: 600;
+  --h5-weight: 600;
+  --h6-weight: 600;
   --h1-font: var(--mycss-heading-title-font);
   --h2-font: var(--mycss-heading-title-font);
   --h3-font: var(--font-text);

@@ -62,9 +62,9 @@ uniform heading sizes when its Monospace font option is enabled.
 | Heading | Size | Weight | Decoration |
 | --- | --- | --- | --- |
 | H1 | `1.6em` | Regular | Thin neutral divider |
-| H2 | `1.3em` | Semibold | Thin neutral divider |
-| H3 | `1.1em` | Bold | Compact spacing |
-| H4–H6 | `1em` | Bold | Compact spacing |
+| H2 | `1.3em` | Regular | Thin neutral divider |
+| H3 | `1.1em` | Semibold | Compact spacing |
+| H4–H6 | `1em` | Semibold | Compact spacing |
 
 H1/H2 use a serif font for supported characters, with the note font as a fallback.
 When Obsidian's document language is Japanese, they use the note font throughout,
@@ -108,7 +108,7 @@ local CSS snippets and are not bundled with this plugin.
 ## Install With BRAT
 
 1. Push this repository to GitHub.
-2. Create a GitHub release whose tag matches `manifest.json` `version`, for example `0.2.2`.
+2. Create a GitHub release whose tag matches `manifest.json` `version`, for example `0.2.3`.
 3. Attach these release assets:
    - `manifest.json`
    - `main.js`
@@ -121,8 +121,8 @@ The included GitHub Actions workflow creates the release assets automatically wh
 ## Release
 
 ```sh
-git tag 0.2.2
-git push origin 0.2.2
+git tag 0.2.3
+git push origin 0.2.3
 ```
 
 Before the next release, update the version in `manifest.json`, `package.json`, and

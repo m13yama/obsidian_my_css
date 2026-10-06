@@ -1,7 +1,7 @@
 {
   "id": "obsidian-my-css",
   "name": "Obsidian My CSS",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "minAppVersion": "1.7.2",
   "description": "Personal CSS tweaks and a full-width source editor with line wrapping and column rulers for Obsidian.",
   "author": "yuki",
