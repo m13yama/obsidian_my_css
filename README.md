@@ -6,7 +6,8 @@ Personal Obsidian CSS packaged as a lightweight community plugin so it can be in
 
 - Wider readable markdown line width.
 - Compact academic typography with tighter body text, paragraphs, and lists.
-- Wikipedia-inspired H1–H6 headings with thin H1/H2 dividers in Reading view and Live Preview, and in Source mode when its monospace option is disabled.
+- matcha.css-inspired H1–H6 headings with thin H1/H2 dividers in Reading view and Live Preview, and in Source mode when its monospace option is disabled.
+- Theme-aware quotes, striped tables, dividers, rounded code and image corners, disclosure panels, and keyboard hints inspired by matcha.css.
 - Horizontally centered images and tables in Reading view and Live Preview.
 - Smaller code blocks in Reading view and pink inline code with theme-aware colors.
 - Body-sized code and non-italic LaTeX source in Source mode and Live Preview, with syntax highlighting preserved.
@@ -55,25 +56,28 @@ on each side. These are controlled by `--mycss-note-line-height`,
 `--mycss-paragraph-spacing`, and `--mycss-list-spacing`. Body text size follows
 Obsidian's font size setting.
 
-Headings take their cues from [Wikipedia's Vector typography](https://github.com/wikimedia/mediawiki-skins-Vector/blob/master/resources/skins.vector.styles/typography.less),
-adapted to Obsidian's theme colors and an academic layout. Source mode uses
-uniform heading sizes when its Monospace font option is enabled.
+Headings and common note components take their cues from
+[matcha.css 3.0.1](https://github.com/lowlighter/matcha), adapted to Obsidian's theme
+colors and note font size. Styles are bundled locally, with no CDN dependency.
+The compact body spacing, centered media, pink inline code, source editor tools,
+and Mermaid zoom remain specific to this plugin. Source mode uses uniform
+heading sizes when its Monospace font option is enabled.
 
 | Heading | Size | Weight | Decoration |
 | --- | --- | --- | --- |
-| H1 | `1.6em` | Regular | Thin neutral divider |
-| H2 | `1.3em` | Regular | Thin neutral divider |
-| H3 | `1.1em` | Semibold | Compact spacing |
-| H4–H6 | `1em` | Semibold | Compact spacing |
+| H1 | `2em` | Bold | Thin neutral divider |
+| H2 | `1.5em` | Bold | Thin neutral divider |
+| H3 | `1.25em` | Bold | — |
+| H4 | `1em` | Bold | — |
+| H5 | `0.875em` | Bold | — |
+| H6 | `0.85em` | Bold | Muted text color |
 
-H1/H2 use a serif font for supported characters, with the note font as a fallback.
-When Obsidian's document language is Japanese, they use the note font throughout,
-following Vector's Japanese font fallback. H3–H6 use the note font.
+All headings use the note font, including Japanese text, with a `1.25` line height.
+Sizes scale with Obsidian's font size setting.
 
-H1/H2 have `1.2em` above them; H3–H6 have `0.8em`. The gap below headings is
-`0.25em`, with a tighter `0.2em` gap below H3. Adjacent paragraph/block margins
-are adjusted so they do not enlarge these gaps. Authored blank lines in the
-editor remain visible.
+Headings have a gap of `1.5` times the body font size above them and `1` times
+below. Adjacent paragraph/block margins are adjusted so they do not enlarge these
+gaps. Authored blank lines in the editor remain visible.
 
 Customization variables are near the top of `styles.css`: `--mycss-h1-rule-color`,
 `--mycss-h2-rule-color`, `--mycss-heading-rule-gap`, `--mycss-heading-title-font`,
@@ -82,16 +86,30 @@ Customization variables are near the top of `styles.css`: `--mycss-h1-rule-color
 `--mycss-h3-spacing-after`. Override the standard `--h1-size` through `--h6-size`
 variables on `.markdown-rendered, .markdown-source-view.mod-cm6` to change sizes.
 
+Quotes use a neutral `4px` rule and muted text; horizontal dividers also use a
+`4px` rule. Tables have a shaded bold header, alternating row backgrounds, and
+their original cell padding and alignment. Colors follow the active Obsidian
+theme in light and dark modes. Native callout colors and table editing controls
+are retained.
+
+Rendered HTML `<details>` panels have a bordered, rounded container and a shaded
+summary when open. `<kbd>` hints and images use the same `6px` corner radius as
+code. Component customization variables are `--mycss-component-border-color`,
+`--mycss-component-background`, `--mycss-component-radius`,
+and `--mycss-table-header-background`.
+
 Images and tables are centered within their containing note column. Table cell
-text keeps its existing alignment, and Live Preview tables retain their editing
-controls and horizontal scroll container.
+padding, text alignment, and caption placement keep the theme's original layout.
+Live Preview tables retain their editing controls and horizontal scroll container,
+with cell padding applied by Obsidian to the editable wrapper only.
 
 In Reading view, code blocks use `0.82em` text with a `1.3` line height and the theme's subtle
 alternate background. Inline code uses `0.85em` text, pink lettering, and the
 theme's neutral secondary background, with line height inherited from the
 surrounding text. Pink is mixed with the theme's text color to suit light and dark modes.
-Existing border, corner, and padding styles are kept. Code size and color tuning
-variables (`--mycss-code-block-*` and `--mycss-inline-code-*`) are in `styles.css`.
+Code uses `6px` corners, and rendered code blocks have padding equal to the body
+font size. Code size and color tuning variables (`--mycss-code-block-*` and
+`--mycss-inline-code-*`) are in `styles.css`.
 
 In Source mode and Live Preview, code blocks, inline code, and LaTeX source use
 `1em` text to match the surrounding body text and follow Obsidian's font size
@@ -108,7 +126,7 @@ local CSS snippets and are not bundled with this plugin.
 ## Install With BRAT
 
 1. Push this repository to GitHub.
-2. Create a GitHub release whose tag matches `manifest.json` `version`, for example `0.2.3`.
+2. Create a GitHub release whose tag matches `manifest.json` `version`, for example `0.2.4`.
 3. Attach these release assets:
    - `manifest.json`
    - `main.js`
@@ -121,8 +139,8 @@ The included GitHub Actions workflow creates the release assets automatically wh
 ## Release
 
 ```sh
-git tag 0.2.3
-git push origin 0.2.3
+git tag 0.2.4
+git push origin 0.2.4
 ```
 
 Before the next release, update the version in `manifest.json`, `package.json`, and

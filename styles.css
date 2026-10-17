@@ -10,28 +10,28 @@ body {
 }
 
 /*
-  Compact academic note typography with Wikipedia / Vector-inspired headings.
-  Reference: https://github.com/wikimedia/mediawiki-skins-Vector/blob/master/resources/skins.vector.styles/typography.less
-  Use compact body spacing and more room around headings, with Obsidian's theme colors.
+  Compact note typography with matcha.css-inspired headings and components.
+  Reference: https://github.com/lowlighter/matcha (matcha.css 3.0.1)
+  Adapt the visual hierarchy to Obsidian's note font size and theme colors.
 */
 body {
   --mycss-note-line-height: 1.4;
   --mycss-paragraph-spacing: 0.4em;
   --mycss-list-spacing: 0.025em;
-  --mycss-heading-title-font: "Linux Libertine", Georgia, "Times New Roman", var(--font-text);
-  --mycss-h1-rule-color: var(--background-modifier-border-hover);
-  --mycss-h2-rule-color: var(--background-modifier-border-hover);
-  --mycss-heading-rule-gap: 0.15em;
-  --mycss-heading-spacing-before: 1.2em;
-  --mycss-heading-spacing-after: 0.25em;
-  --mycss-subheading-spacing-before: 0.8em;
-  --mycss-h3-spacing-before: 0.8em;
-  --mycss-h3-spacing-after: 0.2em;
-}
-
-/* Vector uses a sans-serif fallback for Japanese headings. */
-body:lang(ja) {
   --mycss-heading-title-font: var(--font-text);
+  --mycss-component-border-color: var(--background-modifier-border);
+  --mycss-component-background: var(--background-secondary);
+  --mycss-component-radius: 6px;
+  --mycss-h1-rule-color: var(--mycss-component-border-color);
+  --mycss-h2-rule-color: var(--mycss-component-border-color);
+  --mycss-heading-rule-gap: 0;
+  /* Base spacing on body text so H1 and H6 have the same surrounding rhythm. */
+  --mycss-heading-spacing-before: calc(var(--font-text-size) * 1.5);
+  --mycss-heading-spacing-after: var(--font-text-size);
+  --mycss-subheading-spacing-before: var(--mycss-heading-spacing-before);
+  --mycss-h3-spacing-before: var(--mycss-subheading-spacing-before);
+  --mycss-h3-spacing-after: var(--mycss-heading-spacing-after);
+  --mycss-table-header-background: color-mix(in srgb, var(--text-normal) 12%, var(--background-primary));
 }
 
 /* Scope typography to note content so settings and other UI headings keep their style. */
@@ -39,18 +39,18 @@ body:lang(ja) {
 .markdown-source-view.mod-cm6 {
   --line-height-normal: var(--mycss-note-line-height);
   --list-spacing: var(--mycss-list-spacing);
-  --h1-size: 1.6em;
-  --h2-size: 1.3em;
-  --h3-size: 1.1em;
+  --h1-size: 2em;
+  --h2-size: 1.5em;
+  --h3-size: 1.25em;
   --h4-size: 1em;
-  --h5-size: 1em;
-  --h6-size: 1em;
-  --h1-weight: 400;
-  --h2-weight: 400;
-  --h3-weight: 600;
-  --h4-weight: 600;
-  --h5-weight: 600;
-  --h6-weight: 600;
+  --h5-size: 0.875em;
+  --h6-size: 0.85em;
+  --h1-weight: 700;
+  --h2-weight: 700;
+  --h3-weight: 700;
+  --h4-weight: 700;
+  --h5-weight: 700;
+  --h6-weight: 700;
   --h1-font: var(--mycss-heading-title-font);
   --h2-font: var(--mycss-heading-title-font);
   --h3-font: var(--font-text);
@@ -62,13 +62,39 @@ body:lang(ja) {
   --h3-color: var(--text-normal);
   --h4-color: var(--text-normal);
   --h5-color: var(--text-normal);
-  --h6-color: var(--text-normal);
-  --h1-line-height: 1.3;
-  --h2-line-height: 1.3;
-  --h3-line-height: 1.4;
-  --h4-line-height: 1.4;
-  --h5-line-height: 1.4;
-  --h6-line-height: 1.4;
+  --h6-color: var(--text-muted);
+  --h1-line-height: 1.25;
+  --h2-line-height: 1.25;
+  --h3-line-height: 1.25;
+  --h4-line-height: 1.25;
+  --h5-line-height: 1.25;
+  --h6-line-height: 1.25;
+  --h1-style: normal;
+  --h2-style: normal;
+  --h3-style: normal;
+  --h4-style: normal;
+  --h5-style: normal;
+  --h6-style: normal;
+  --blockquote-border-thickness: 4px;
+  --blockquote-border-color: var(--mycss-component-border-color);
+  --blockquote-color: var(--text-muted);
+  --blockquote-background-color: transparent;
+  --blockquote-font-style: normal;
+  --blockquote-style: normal;
+  --hr-color: var(--mycss-component-border-color);
+  --hr-thickness: 4px;
+  --code-radius: var(--mycss-component-radius);
+  --table-border-color: var(--mycss-component-border-color);
+  --table-header-background: var(--mycss-table-header-background);
+  --table-header-background-hover: var(--mycss-table-header-background);
+  --table-header-border-color: var(--background-modifier-border-hover);
+  --table-header-weight: 700;
+  --table-row-alt-background: var(--mycss-component-background);
+  --table-row-alt-background-hover: var(--mycss-component-background);
+  --link-decoration: none;
+  --link-decoration-hover: underline;
+  --link-external-decoration: none;
+  --link-external-decoration-hover: underline;
 }
 
 .markdown-rendered {
@@ -149,11 +175,62 @@ body:lang(ja) {
   border-bottom: 1px solid var(--mycss-h2-rule-color);
 }
 
+/* Matcha-like note components, with native editor controls and theme colors. */
+.markdown-rendered blockquote {
+  padding: 0.25em 1em;
+}
+
+:is(.markdown-rendered, .markdown-source-view.mod-cm6.is-live-preview) figcaption {
+  color: var(--text-muted);
+  text-align: center;
+}
+
+:is(.markdown-rendered, .markdown-source-view.mod-cm6.is-live-preview) details {
+  padding: 1em;
+  border: 1px solid var(--mycss-component-border-color);
+  border-radius: var(--mycss-component-radius);
+  margin-block: var(--mycss-paragraph-spacing);
+}
+
+:is(.markdown-rendered, .markdown-source-view.mod-cm6.is-live-preview) summary {
+  color: var(--text-accent);
+  cursor: pointer;
+}
+
+:is(.markdown-rendered, .markdown-source-view.mod-cm6.is-live-preview) summary:hover {
+  text-decoration: underline;
+}
+
+:is(.markdown-rendered, .markdown-source-view.mod-cm6.is-live-preview) summary:focus-visible {
+  outline: 2px solid var(--text-accent);
+  outline-offset: 2px;
+}
+
+:is(.markdown-rendered, .markdown-source-view.mod-cm6.is-live-preview) details[open] > summary {
+  padding: 1em;
+  border-bottom: 1px solid var(--mycss-component-border-color);
+  border-radius: calc(var(--mycss-component-radius) - 1px) calc(var(--mycss-component-radius) - 1px) 0 0;
+  margin: -1em -1em 1em;
+  background-color: var(--mycss-component-background);
+}
+
+:is(.markdown-rendered, .markdown-source-view.mod-cm6.is-live-preview) kbd {
+  padding: 0.2em 0.4em;
+  border: 1px solid var(--mycss-component-border-color);
+  border-radius: var(--mycss-component-radius);
+  background-color: var(--mycss-component-background);
+  color: var(--text-normal);
+  font-family: var(--font-monospace);
+  font-size: 0.85em;
+  box-shadow: none;
+}
+
 /* Center note images and embedded image containers. */
 .markdown-rendered img:not(.cm-widgetBuffer),
 .markdown-source-view.mod-cm6.is-live-preview .image-embed img {
   display: block;
   margin-inline: auto;
+  border-radius: var(--mycss-component-radius);
 }
 
 .markdown-rendered .image-embed,
@@ -169,13 +246,13 @@ body:lang(ja) {
   margin-inline: auto !important;
 }
 
-/* Center the whole table; keep cell alignment and the editor's scroll container. */
+/* Keep the original table layout, theme cell padding, and editor scroll container. */
 .markdown-rendered table,
 .markdown-source-view.mod-cm6 .cm-table-widget .table-wrapper {
   margin-inline: auto;
 }
 
-/* Code typography and colors; keep the theme's existing borders, corners, and padding. */
+/* Preserve the plugin's compact code and pink inline code with Matcha-like corners. */
 body {
   --mycss-code-block-size: 0.82em;
   --mycss-code-block-line-height: 1.3;
@@ -202,6 +279,7 @@ body {
   --code-size: 1em;
   font-size: var(--mycss-code-block-size);
   line-height: var(--mycss-code-block-line-height);
+  padding: var(--font-text-size);
 }
 
 /* Scale the block once, including syntax-highlighted code. */
@@ -493,3 +571,31 @@ body {
   display: block;
   max-width: none;
 }
+
+/*
+  Portions of the note component styles are adapted from matcha.css.
+  https://github.com/lowlighter/matcha
+
+  MIT License
+
+  Copyright (c) 2024 Simon Lecoq
+  Copyright © 2025 Lecoq Simon (@lowlighter)
+
+  Permission is hereby granted, free of charge, to any person obtaining a copy
+  of this software and associated documentation files (the "Software"), to deal
+  in the Software without restriction, including without limitation the rights
+  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+  copies of the Software, and to permit persons to whom the Software is
+  furnished to do so, subject to the following conditions:
+
+  The above copyright notice and this permission notice shall be included in all
+  copies or substantial portions of the Software.
+
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+  SOFTWARE.
+*/
