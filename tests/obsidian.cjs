@@ -230,7 +230,7 @@ async function main() {
     // Reading navigation uses the complete metadata outline, not just rendered
     // headings; duplicated names must still navigate to the correct source line.
     const paragraph = "A paragraph of note content. 日本語の本文です。\n\n".repeat(25);
-    const tocSource = `## Overview\n\n${paragraph}### Details\n\n${paragraph}` +
+    const tocSource = `# Note title\n\nIntroduction.\n\n## Overview\n\n${paragraph}### Details\n\n${paragraph}` +
       `##### Deep detail\n\n${paragraph}## 日本語の見出し\n\n${paragraph}` +
       `### Repeated\n\n${paragraph}### Repeated\n\n${paragraph}` +
       `## Final\n\n\`\`\`md\n# Not a heading\n\`\`\`\n\n${paragraph}` +
@@ -242,7 +242,40 @@ async function main() {
     const toc = page.locator(".mycss-reading-toc");
     const visibleLinks = () => page.locator(".mycss-toc-link:visible").allTextContents();
     await toc.waitFor();
-    assert.deepEqual(await visibleLinks(), ["Beginning", "Overview", "日本語の見出し", "Final", "Setext section"]);
+    const topSections = ["Overview", "日本語の見出し", "Final", "Setext section"];
+    assert.equal(await page.evaluate(() => app.plugins.plugins["obsidian-my-css"].settings.readingTocH1AsTitle), true,
+      "H1 titles are omitted by default when no preference has been saved");
+    assert.deepEqual(await visibleLinks(), topSections);
+    assert.deepEqual(await toc.locator(".mycss-toc-link").allTextContents(),
+      ["Overview", "Details", "Deep detail", "日本語の見出し", "Repeated", "Repeated", "Final", "Setext section"],
+      "The list contains only eligible headings, with no generated Beginning item");
+    assert(await page.locator('.markdown-preview-view h1[data-heading="Note title"]').isVisible(), "H1 remains visible in the note");
+
+    // Exercise the actual H1 setting, its immediate hierarchy change, and persistence.
+    const toggleTitleSetting = async () => {
+      await page.evaluate(() => {
+        app.setting.open();
+        app.setting.openTabById("obsidian-my-css");
+      });
+      await page.locator(".setting-item").filter({ has: page.getByText("Treat H1 as title", { exact: true }) })
+        .locator(".checkbox-container").click();
+      await page.evaluate(() => app.setting.close());
+    };
+    await toggleTitleSetting();
+    assert.deepEqual(await visibleLinks(), ["Note title"], "Turning the title setting off restores H1 as the root");
+    await toc.getByRole("button", { name: "Expand subsections: Note title", exact: true }).click();
+    assert.deepEqual(await visibleLinks(), ["Note title", ...topSections]);
+    await page.waitForFunction(async () => (await app.plugins.plugins["obsidian-my-css"].loadData()).readingTocH1AsTitle === false);
+    await page.evaluate(async () => {
+      await app.plugins.disablePlugin("obsidian-my-css");
+      await app.plugins.enablePlugin("obsidian-my-css");
+    });
+    await toc.getByRole("link", { name: "Note title", exact: true }).waitFor();
+    assert.equal(await page.evaluate(() => app.plugins.plugins["obsidian-my-css"].settings.readingTocH1AsTitle), false);
+    assert.deepEqual(await visibleLinks(), ["Note title"], "The saved off preference survives reload");
+    await toggleTitleSetting();
+    assert.deepEqual(await visibleLinks(), topSections, "Turning the setting on promotes sections immediately");
+    assert.equal(await toc.locator('[aria-current="location"]').count(), 0, "The title and introduction do not activate a synthetic item");
     const tocBounds = async () => page.evaluate(() => {
       const box = element => {
         const { x, y, width, right } = element.getBoundingClientRect();
@@ -251,6 +284,69 @@ async function main() {
       return { nav: box(document.querySelector(".mycss-reading-toc")),
         preview: box(document.querySelector(".mycss-has-toc > .markdown-preview-view")) };
     });
+    // Mouse and settings controls share a persistent width preference.
+    const resizer = toc.getByRole("separator", { name: "Resize contents" });
+    const savedTocWidth = () => page.evaluate(() => app.plugins.plugins["obsidian-my-css"].settings.readingTocWidth);
+    const waitForTocWidth = (width) => page.waitForFunction(width =>
+      Math.abs(document.querySelector(".mycss-reading-toc").getBoundingClientRect().width - width) < 1, width);
+    const dragToc = async (delta, finish = true) => {
+      const box = await resizer.boundingBox();
+      await page.mouse.move(box.x + box.width / 2, box.y + 20);
+      await page.mouse.down();
+      await page.mouse.move(box.x + box.width / 2 - delta, box.y + 20, { steps: 5 });
+      if (finish) await page.mouse.up();
+    };
+    await waitForTocWidth(224);
+    await dragToc(96);
+    await waitForTocWidth(320);
+    assert.equal(await savedTocWidth(), 320, "Dragging left widens the right-hand contents");
+    assert.equal(await page.locator("body.mycss-resizing-toc").count(), 0);
+    assert.deepEqual(await visibleLinks(), topSections, "Resizing preserves the outline");
+    await dragToc(40, false);
+    await waitForTocWidth(360);
+    await page.keyboard.press("Escape");
+    await page.mouse.up();
+    await waitForTocWidth(320);
+    assert.equal(await savedTocWidth(), 320, "Escape cancels a drag");
+    await dragToc(-400);
+    await waitForTocWidth(160);
+    await resizer.focus();
+    await page.keyboard.press("ArrowLeft");
+    await waitForTocWidth(170);
+    await page.keyboard.press("Shift+ArrowLeft");
+    await waitForTocWidth(220);
+    await resizer.dblclick({ position: { x: 4, y: 20 } });
+    await waitForTocWidth(224);
+
+    await page.evaluate(() => {
+      app.setting.open();
+      app.setting.openTabById("obsidian-my-css");
+    });
+    const tocWidthSetting = page.locator(".setting-item").filter({ has: page.getByText("Table of contents width", { exact: true }) });
+    const tocWidthInput = tocWidthSetting.getByRole("spinbutton");
+    await tocWidthInput.fill("360");
+    await tocWidthSetting.getByRole("button", { name: "Apply", exact: true }).click();
+    await waitForTocWidth(360);
+    await tocWidthSetting.getByRole("button", { name: "Reset", exact: true }).click();
+    await waitForTocWidth(224);
+    assert.equal(await tocWidthInput.inputValue(), "224");
+    await tocWidthInput.fill("159");
+    await tocWidthInput.press("Enter");
+    assert.equal(await savedTocWidth(), 224, "An out-of-range width does not replace the saved value");
+    await tocWidthInput.fill("340");
+    await tocWidthInput.press("Enter");
+    await waitForTocWidth(340);
+    await page.evaluate(() => app.setting.close());
+    await dragToc(-20);
+    await waitForTocWidth(320);
+    await page.waitForFunction(async () => (await app.plugins.plugins["obsidian-my-css"].loadData()).readingTocWidth === 320);
+    await page.evaluate(async () => {
+      await app.plugins.disablePlugin("obsidian-my-css");
+      await app.plugins.enablePlugin("obsidian-my-css");
+    });
+    await toc.waitFor();
+    await waitForTocWidth(320);
+    assert.equal(await savedTocWidth(), 320, "The dragged width survives plugin reload");
     const shownBounds = await tocBounds();
     assert(shownBounds.nav.x >= shownBounds.preview.right - 1, "Contents are to the right, without overlapping the note");
     const overviewToggle = toc.getByRole("button", { name: "Expand subsections: Overview", exact: true });
@@ -264,6 +360,7 @@ async function main() {
     assert.equal(await page.locator(".mycss-toc-list:visible").count(), 0);
     assert((await tocBounds()).preview.width > shownBounds.preview.width + 100, "Hiding contents releases note width");
     await toc.getByRole("button", { name: "Show contents", exact: true }).click();
+    await waitForTocWidth(320);
     assert((await visibleLinks()).includes("Deep detail"), "Hide/show retains expanded branches");
     await toc.getByRole("button", { name: "Expand subsections: 日本語の見出し", exact: true }).click();
     await toc.getByRole("link", { name: "Repeated", exact: true }).nth(1).click();
@@ -276,8 +373,15 @@ async function main() {
     await page.waitForFunction(() => document.querySelector('.mycss-toc-link[aria-current="location"]')?.textContent === "Repeated");
     await toc.getByRole("button", { name: "Collapse subsections: 日本語の見出し", exact: true }).click();
     assert.equal(await toc.locator('[aria-current="location"]').textContent(), "日本語の見出し");
-    await toc.getByRole("link", { name: "Beginning", exact: true }).click();
-    await page.waitForFunction(() => app.workspace.activeLeaf.view.previewMode.getScroll() < 1);
+    await toc.getByRole("link", { name: "Overview", exact: true }).click();
+    await page.waitForFunction(() => {
+      const view = app.workspace.activeLeaf.view;
+      const heading = app.metadataCache.getFileCache(view.file).headings.find(h => h.heading === "Overview");
+      return Math.abs(view.previewMode.getScroll() - heading.position.start.line) < 1;
+    });
+    await page.evaluate(() => app.workspace.activeLeaf.view.previewMode.applyScroll(0));
+    await page.waitForFunction(() => !document.querySelector('.mycss-toc-link[aria-current="location"]'));
+    assert.deepEqual((await visibleLinks()).slice(0, 3), ["Overview", "Details", "Deep detail"]);
     await page.screenshot({ path: join(root, "reading-toc.png") });
 
     // Metadata updates refresh the contents without resetting open branches.
@@ -296,11 +400,16 @@ async function main() {
       await leaf.openFile(file, { state: { mode: "preview" } });
     });
     await page.waitForFunction(() => document.querySelectorAll(".mycss-reading-toc").length === 2);
-    assert.equal(await toc.getByRole("link", { name: "Other note", exact: true, includeHidden: true }).count(), 1);
+    assert.equal(await toc.getByRole("link", { name: "Other note", exact: true, includeHidden: true }).count(), 0);
+    assert.equal(await toc.getByRole("link", { name: "Child", exact: true, includeHidden: true }).count(), 1);
     assert.equal(await page.evaluate(() => {
       const ids = [...document.querySelectorAll(".mycss-reading-toc [id]")].map(el => el.id);
       return ids.length === new Set(ids).size;
     }), true);
+    await page.evaluate(() => app.plugins.plugins["obsidian-my-css"].setReadingTocWidth(360));
+    assert.deepEqual(await page.locator(".mycss-has-toc").evaluateAll(elements =>
+      elements.map(el => el.style.getPropertyValue("--mycss-toc-width"))), ["360px", "360px"],
+      "Changing the width updates every open contents panel");
     await page.evaluate(() => app.workspace.activeLeaf.detach());
     await page.waitForFunction(() => document.querySelectorAll(".mycss-reading-toc").length === 1);
 
@@ -309,6 +418,12 @@ async function main() {
     await page.locator(".mycss-toc-narrow.mycss-toc-collapsed").waitFor();
     await toc.getByRole("button", { name: "Show contents", exact: true }).click();
     assert(await toc.getByRole("link", { name: "Overview", exact: true }).isVisible());
+    await page.evaluate(() => app.plugins.plugins["obsidian-my-css"].setReadingTocWidth(600));
+    await settle();
+    const narrowBounds = await tocBounds();
+    assert(narrowBounds.nav.x >= narrowBounds.preview.x && narrowBounds.nav.right <= narrowBounds.preview.right,
+      "An oversized saved width fits inside a narrow pane");
+    assert.equal(await savedTocWidth(), 600, "Responsive fitting preserves the preferred width");
     await page.screenshot({ path: join(root, "reading-toc-narrow.png") });
     await page.keyboard.press("Escape");
     assert.equal(await page.locator(".mycss-toc-list:visible").count(), 0);
@@ -318,6 +433,17 @@ async function main() {
     await page.setViewportSize({ width: 1500, height: 1000 });
     await page.waitForFunction(() => !document.querySelector(".mycss-toc-narrow"));
     assert(await toc.getByRole("link", { name: "Overview", exact: true }).isVisible());
+    await waitForTocWidth(600);
+    await dragToc(100);
+    await waitForTocWidth(600);
+    assert.equal(await savedTocWidth(), 600, "Dragging cannot exceed the width limit");
+    await page.setViewportSize({ width: 1200, height: 1000 });
+    await settle();
+    assert((await tocBounds()).preview.width >= 360, "A wide contents panel preserves space for the note");
+    assert.equal(await savedTocWidth(), 600);
+    await page.setViewportSize({ width: 1500, height: 1000 });
+    await waitForTocWidth(600);
+    await page.evaluate(() => app.plugins.plugins["obsidian-my-css"].setReadingTocWidth(320));
 
     // The actual settings toggle removes the column, and off survives reload.
     await page.evaluate(() => {
@@ -359,6 +485,25 @@ async function main() {
     });
     await settle();
     assert.equal(await toc.count(), 0, "Notes without headings have no contents panel");
+    await page.evaluate(async () => {
+      const file = await app.vault.create("title-only.md", "Only title\n==========\n\nText.");
+      await app.workspace.activeLeaf.openFile(file, { state: { mode: "preview" } });
+    });
+    await page.waitForFunction(() => app.metadataCache.getFileCache(app.workspace.activeLeaf.view.file)?.headings?.length === 1);
+    await settle();
+    assert.equal(await toc.count(), 0, "H1-only notes have no empty panel when H1 is a title");
+    await page.evaluate(() => app.plugins.plugins["obsidian-my-css"].setReadingTocSetting("readingTocH1AsTitle", false));
+    await toc.waitFor();
+    assert.deepEqual(await visibleLinks(), ["Only title"], "Setext H1 follows the same title setting");
+    await page.evaluate(() => app.plugins.plugins["obsidian-my-css"].setReadingTocSetting("readingTocH1AsTitle", true));
+    assert.equal(await toc.count(), 0);
+    await page.evaluate(async () => {
+      const file = await app.vault.create("multiple-titles.md", "# First title\n\n## First section\n\n### Child\n\n# Second title\n\n### Second section\n\nText.");
+      await app.workspace.activeLeaf.openFile(file, { state: { mode: "preview" } });
+    });
+    await toc.waitFor();
+    assert.deepEqual(await visibleLinks(), ["First section", "Second section"],
+      "Omitted H1 titles still separate sections when later heading levels are skipped");
     await page.evaluate(() => app.workspace.activeLeaf.openFile(app.vault.getAbstractFileByPath("contents.md"), { state: { mode: "preview" } }));
     await toc.waitFor();
     assert(!(await visibleLinks()).includes("Details"), "Newly opened notes start collapsed");
@@ -373,6 +518,8 @@ async function main() {
     }), `An introduction.\n\n${tocSource}\n\n## Added later\n\nText.`, "TOC interactions never edit note contents");
     await page.evaluate(() => app.plugins.disablePlugin("obsidian-my-css"));
     assert.equal(await page.locator(".mycss-reading-toc, .mycss-has-toc").count(), 0);
+    assert.equal(await page.locator(".mycss-toc-resizer, .mycss-resizing-toc").count(), 0);
+    assert.equal(await page.locator('[style*="--mycss-toc-width"]').count(), 0);
     assert.equal(await page.locator(".mycss-source-editor, .mycss-source-rulers, .mycss-source-line-numbers").count(), 0);
     assert.deepEqual(errors, [], "No runtime errors");
     console.log(`Source editor and Reading view TOC smoke tests passed. Screenshots: ${root}`);

@@ -6,6 +6,8 @@ const DEFAULT_SETTINGS = {
   markdownLineWidth: "880px",
   readingTocEnabled: true,
   readingTocCollapsed: false,
+  readingTocH1AsTitle: true,
+  readingTocWidth: 224,
   sourceEditorEnabled: true,
   sourceLineWrap: true,
   sourceLineNumbers: true,
@@ -274,6 +276,16 @@ function createMermaidZoomIconButton(parentEl, icon, label) {
   return button;
 }
 
+const READING_TOC_MIN_WIDTH = 160;
+const READING_TOC_MAX_WIDTH = 600;
+
+function parseReadingTocWidth(value) {
+  const text = String(value ?? "").trim();
+  if (!/^\d+$/.test(text)) return null;
+  const width = Number(text);
+  return width >= READING_TOC_MIN_WIDTH && width <= READING_TOC_MAX_WIDTH ? width : null;
+}
+
 let readingTocId = 0;
 
 // Keep navigation outside the virtualized preview so every heading is available,
@@ -290,14 +302,59 @@ class ReadingTableOfContents extends Component {
     this.entries = [];
     this.narrowOpen = false;
     this.labels = this.host.matches(":lang(ja)")
-      ? { contents: "目次", hide: "非表示", show: "目次を表示", top: "先頭", expand: "下位見出しを表示", collapse: "下位見出しを隠す" }
-      : { contents: "Contents", hide: "hide", show: "Show contents", top: "Beginning", expand: "Expand subsections", collapse: "Collapse subsections" };
+      ? { contents: "目次", hide: "非表示", show: "目次を表示", expand: "下位見出しを表示", collapse: "下位見出しを隠す",
+        resize: "目次の幅を調整", resizeHint: "ドラッグまたは左右キーで幅を調整。ダブルクリックで初期値に戻す。" }
+      : { contents: "Contents", hide: "hide", show: "Show contents", expand: "Expand subsections", collapse: "Collapse subsections",
+        resize: "Resize contents", resizeHint: "Drag or use Left/Right to resize. Double-click to reset." };
   }
 
   onload() {
     this.host.addClass("mycss-has-toc");
     this.nav = this.host.createEl("nav", {
-      cls: "mycss-reading-toc", attr: { "aria-label": this.labels.contents },
+      cls: "mycss-reading-toc", attr: { id: `${this.id}-nav`, "aria-label": this.labels.contents },
+    });
+    this.resizer = this.nav.createDiv({ cls: "mycss-toc-resizer", attr: {
+      role: "separator", tabindex: "0", "aria-orientation": "vertical",
+      "aria-label": this.labels.resize, "aria-controls": this.nav.id, title: this.labels.resizeHint,
+    } });
+    this.registerDomEvent(this.resizer, "pointerdown", (event) => {
+      if (event.button !== 0 || !event.isPrimary || this.drag) return;
+      event.preventDefault();
+      this.resizer.focus({ preventScroll: true });
+      this.drag = { pointerId: event.pointerId, x: event.clientX,
+        width: this.nav.getBoundingClientRect().width, savedWidth: this.plugin.settings.readingTocWidth };
+      this.resizer.setPointerCapture(event.pointerId);
+      this.host.ownerDocument.body.addClass("mycss-resizing-toc");
+    });
+    this.registerDomEvent(this.resizer, "pointermove", (event) => {
+      if (this.drag?.pointerId !== event.pointerId) return;
+      const width = Math.round(clamp(this.drag.width + this.drag.x - event.clientX,
+        READING_TOC_MIN_WIDTH, this.maxWidth()));
+      void this.plugin.setReadingTocWidth(width, false);
+    });
+    this.registerDomEvent(this.resizer, "pointerup", (event) => {
+      if (this.drag?.pointerId === event.pointerId) this.finishResize(true);
+    });
+    for (const event of ["pointercancel", "lostpointercapture"]) {
+      this.registerDomEvent(this.resizer, event, () => this.finishResize(false));
+    }
+    this.registerDomEvent(this.win, "blur", () => this.finishResize(false));
+    this.registerDomEvent(this.resizer, "dblclick", () => {
+      void this.plugin.setReadingTocWidth(DEFAULT_SETTINGS.readingTocWidth);
+    });
+    this.registerDomEvent(this.resizer, "keydown", (event) => {
+      if (event.key === "Escape" && this.drag) {
+        this.finishResize(false);
+      } else {
+        const step = event.shiftKey ? 50 : 10;
+        const current = this.nav.getBoundingClientRect().width;
+        const widths = { ArrowLeft: current + step, ArrowRight: current - step,
+          Home: READING_TOC_MIN_WIDTH, End: this.maxWidth() };
+        if (!(event.key in widths) || this.drag) return;
+        void this.plugin.setReadingTocWidth(Math.round(clamp(widths[event.key], READING_TOC_MIN_WIDTH, this.maxWidth())));
+      }
+      event.preventDefault();
+      event.stopPropagation();
     });
     const header = this.nav.createDiv({ cls: "mycss-toc-header" });
     this.title = header.createEl("span", { cls: "mycss-toc-title", text: this.labels.contents });
@@ -326,10 +383,12 @@ class ReadingTableOfContents extends Component {
     const observer = new this.win.ResizeObserver(() => {
       const narrow = this.host.clientWidth < 760;
       if (narrow !== this.narrow) {
+        this.finishResize(false);
         this.narrow = narrow;
         this.narrowOpen = false;
         this.updateVisibility();
       }
+      this.updateWidth();
     });
     observer.observe(this.host);
     this.register(() => observer.disconnect());
@@ -339,6 +398,8 @@ class ReadingTableOfContents extends Component {
 
   updateVisibility() {
     const collapsed = this.narrow ? !this.narrowOpen : this.plugin.settings.readingTocCollapsed;
+    this.collapsed = collapsed;
+    if (collapsed) this.finishResize(false);
     this.host.toggleClass("mycss-toc-narrow", this.narrow);
     this.host.toggleClass("mycss-toc-collapsed", collapsed);
     this.list.hidden = collapsed;
@@ -349,10 +410,42 @@ class ReadingTableOfContents extends Component {
     this.toggle.empty();
     if (collapsed) setIcon(this.toggle, "list-tree");
     else this.toggle.setText(this.labels.hide);
+    this.updateWidth();
+  }
+
+  maxWidth() {
+    const available = this.host.clientWidth;
+    // Retain room for the note on desktop; overlays stay inside narrow panes.
+    return available ? Math.max(1, Math.min(READING_TOC_MAX_WIDTH, available - (this.narrow ? 16 : 360)))
+      : READING_TOC_MAX_WIDTH;
+  }
+
+  updateWidth() {
+    if (this.disposed) return;
+    const max = this.maxWidth();
+    if (max < READING_TOC_MIN_WIDTH) this.finishResize(false);
+    const width = Math.min(this.plugin.settings.readingTocWidth, max);
+    this.host.style.setProperty("--mycss-toc-width", `${width}px`);
+    this.resizer.hidden = this.collapsed || max < READING_TOC_MIN_WIDTH;
+    this.resizer.setAttribute("aria-valuemin", String(Math.min(READING_TOC_MIN_WIDTH, max)));
+    this.resizer.setAttribute("aria-valuemax", String(max));
+    this.resizer.setAttribute("aria-valuenow", String(width));
+  }
+
+  finishResize(save) {
+    if (!this.drag) return;
+    const { pointerId, savedWidth } = this.drag;
+    this.drag = null;
+    this.host.ownerDocument.body.removeClass("mycss-resizing-toc");
+    if (this.resizer.hasPointerCapture(pointerId)) this.resizer.releasePointerCapture(pointerId);
+    if (save) void this.plugin.saveSettings();
+    else void this.plugin.setReadingTocWidth(savedWidth, false);
   }
 
   update(headings) {
-    const signature = JSON.stringify(headings.map((heading) => [heading.level, heading.heading, heading.position.start.line]));
+    const h1AsTitle = this.plugin.settings.readingTocH1AsTitle;
+    const signature = JSON.stringify([h1AsTitle,
+      headings.map((heading) => [heading.level, heading.heading, heading.position.start.line])]);
     const fileChanged = this.file !== this.view.file;
     if (!fileChanged && this.signature === signature) return;
     if (fileChanged) {
@@ -364,12 +457,13 @@ class ReadingTableOfContents extends Component {
     this.signature = signature;
     this.list.empty();
     this.entries = [];
-    const beginning = this.list.createEl("li", { cls: "mycss-toc-item" });
-    this.topLink = this.createLink(beginning, this.labels.top, 0);
     const stack = [];
     const occurrences = new Map();
     for (const heading of headings) {
       while (stack.length && stack[stack.length - 1].level >= heading.level) stack.pop();
+      // A title still starts a new section, so later headings must not nest
+      // under the previous title's subsections when H1 is omitted.
+      if (h1AsTitle && heading.level === 1) continue;
       const parent = stack[stack.length - 1];
       // Use heading text and occurrence, rather than line number, to retain open
       // branches when paragraphs above them are edited.
@@ -441,7 +535,7 @@ class ReadingTableOfContents extends Component {
 
   updateActive() {
     const line = this.view.previewMode.getScroll();
-    if (!Number.isFinite(line) || !this.topLink) return;
+    if (!Number.isFinite(line)) return;
     let active;
     for (const entry of this.entries) {
       if (entry.line > line + 0.5) break;
@@ -451,17 +545,20 @@ class ReadingTableOfContents extends Component {
     for (let parent = active?.parent; parent; parent = parent.parent) {
       if (!this.expanded.has(parent.key)) active = parent;
     }
-    const link = active?.link || this.topLink;
+    const link = active?.link;
     if (this.activeLink !== link) {
       this.activeLink?.removeAttribute("aria-current");
-      link.setAttribute("aria-current", "location");
+      link?.setAttribute("aria-current", "location");
       this.activeLink = link;
     }
   }
 
   onunload() {
+    this.disposed = true;
+    this.finishResize(false);
     if (this.frame) this.win.cancelAnimationFrame(this.frame);
     this.nav.remove();
+    this.host.style.removeProperty("--mycss-toc-width");
     this.host.removeClass("mycss-has-toc", "mycss-toc-narrow", "mycss-toc-collapsed");
   }
 }
@@ -512,7 +609,7 @@ module.exports = class ObsidianMyCssPlugin extends Plugin {
         const view = leaf.view;
         if (!(view instanceof MarkdownView) || view.getMode() !== "preview" || !view.file) continue;
         const headings = this.app.metadataCache.getFileCache(view.file)?.headings || [];
-        if (!headings.length) continue;
+        if (!headings.some((heading) => !this.settings.readingTocH1AsTitle || heading.level !== 1)) continue;
         views.add(view);
         let toc = this.readingTocs.get(view);
         if (!toc) {
@@ -537,6 +634,18 @@ module.exports = class ObsidianMyCssPlugin extends Plugin {
     await this.saveSettings();
   }
 
+  async setReadingTocWidth(value, save = true) {
+    const width = parseReadingTocWidth(value);
+    if (width === null) {
+      new Notice(`Enter a whole-number width from ${READING_TOC_MIN_WIDTH} to ${READING_TOC_MAX_WIDTH} pixels.`);
+      return false;
+    }
+    this.settings.readingTocWidth = width;
+    for (const toc of this.readingTocs.values()) toc.updateWidth();
+    if (save) await this.saveSettings();
+    return true;
+  }
+
   async loadSettings() {
     this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
 
@@ -548,6 +657,7 @@ module.exports = class ObsidianMyCssPlugin extends Plugin {
     for (const [key, value] of Object.entries(DEFAULT_SETTINGS)) {
       if (typeof value === "boolean" && typeof this.settings[key] !== "boolean") this.settings[key] = value;
     }
+    this.settings.readingTocWidth = parseReadingTocWidth(this.settings.readingTocWidth) ?? DEFAULT_SETTINGS.readingTocWidth;
     const columns = parseRulerColumns(this.settings.sourceRulerColumns);
     this.settings.sourceRulerColumns = columns ? columns.join(", ") : DEFAULT_SETTINGS.sourceRulerColumns;
   }
@@ -671,6 +781,41 @@ class ObsidianMyCssSettingTab extends PluginSettingTab {
       .setDesc("Show a fixed table of contents on the right in Reading view. Subsections start collapsed; use the arrows to expand them.")
       .addToggle((toggle) => toggle.setValue(this.plugin.settings.readingTocEnabled)
         .onChange((value) => this.plugin.setReadingTocSetting("readingTocEnabled", value)));
+    new Setting(containerEl)
+      .setName("Treat H1 as title")
+      .setDesc("Omit H1 titles from the table of contents and show their sections at the top level. Turn off to include H1 headings.")
+      .addToggle((toggle) => toggle.setValue(this.plugin.settings.readingTocH1AsTitle)
+        .onChange((value) => this.plugin.setReadingTocSetting("readingTocH1AsTitle", value)));
+
+    let tocWidthInput;
+    const applyTocWidth = async () => {
+      if (await this.plugin.setReadingTocWidth(tocWidthInput.getValue())) {
+        tocWidthInput.setValue(String(this.plugin.settings.readingTocWidth));
+      }
+    };
+    new Setting(containerEl)
+      .setName("Table of contents width")
+      .setDesc(`Width in pixels (${READING_TOC_MIN_WIDTH}–${READING_TOC_MAX_WIDTH}). You can also drag the left edge of the contents. Narrow panes fit the width to the available space.`)
+      .addText((text) => {
+        tocWidthInput = text;
+        text.setPlaceholder(String(DEFAULT_SETTINGS.readingTocWidth)).setValue(String(this.plugin.settings.readingTocWidth));
+        text.inputEl.type = "number";
+        text.inputEl.min = String(READING_TOC_MIN_WIDTH);
+        text.inputEl.max = String(READING_TOC_MAX_WIDTH);
+        text.inputEl.step = "1";
+        text.inputEl.setAttribute("aria-label", "Table of contents width in pixels");
+        text.inputEl.addEventListener("keydown", (event) => {
+          if (event.key === "Enter") {
+            event.preventDefault();
+            void applyTocWidth();
+          }
+        });
+      })
+      .addButton((button) => button.setButtonText("Apply").onClick(applyTocWidth))
+      .addButton((button) => button.setButtonText("Reset").onClick(async () => {
+        await this.plugin.setReadingTocWidth(DEFAULT_SETTINGS.readingTocWidth);
+        tocWidthInput.setValue(String(this.plugin.settings.readingTocWidth));
+      }));
 
     containerEl.createEl("h3", { text: "Source editor" });
     const addToggle = (name, description, key) => new Setting(containerEl)

@@ -227,7 +227,7 @@ body {
 
 /* Reading view navigation: a fixed right column beside the scrolling note. */
 .markdown-reading-view.mycss-has-toc {
-  --mycss-toc-width: 14rem;
+  --mycss-toc-width: 224px;
   display: grid;
   grid-template-columns: minmax(0, 1fr) var(--mycss-toc-width);
   position: relative;
@@ -241,6 +241,7 @@ body {
 }
 
 .mycss-reading-toc {
+  position: relative;
   grid-area: 1 / 2;
   display: flex;
   flex-direction: column;
@@ -253,6 +254,34 @@ body {
   font-family: var(--font-text);
   font-size: var(--font-text-size);
   line-height: var(--mycss-note-line-height);
+}
+
+.mycss-toc-resizer {
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: -4px;
+  width: 8px;
+  z-index: 1;
+  cursor: col-resize;
+  touch-action: none;
+}
+
+.mycss-toc-resizer:hover,
+.mycss-toc-resizer:focus-visible,
+.mycss-resizing-toc .mycss-toc-resizer {
+  background: var(--interactive-accent);
+  opacity: 0.5;
+}
+
+.mycss-toc-resizer:focus-visible {
+  outline: 2px solid var(--interactive-accent);
+  outline-offset: 1px;
+}
+
+body.mycss-resizing-toc,
+body.mycss-resizing-toc * {
+  cursor: col-resize !important;
+  user-select: none !important;
 }
 
 .mycss-toc-header {
@@ -326,10 +355,6 @@ body {
   color: var(--text-muted);
   text-decoration: none;
   overflow-wrap: anywhere;
-}
-
-.mycss-toc-item > .mycss-toc-link {
-  padding-inline-start: 1.25em;
 }
 
 .mycss-toc-link:hover {

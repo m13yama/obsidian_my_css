@@ -27,6 +27,20 @@ turn the feature on or off (on by default). Changes apply immediately to open
 notes and are saved across restarts. Disabling it removes the entire navigation
 column and restores the original note width.
 
+**Treat H1 as title** is also on by default. H1 headings are treated as note
+titles and omitted from the contents; their H2 sections appear at the top level.
+Turn this setting off to include H1 headings in the hierarchy. It applies
+immediately and is saved across restarts. The contents list contains only note
+headings, with no generated "Beginning" item.
+
+Drag the left edge of the contents to adjust its width, or enter a pixel value
+in **Table of contents width** and press **Apply** or Enter. The default is
+`224px`, with a range of `160`–`600px`. The width is shared by open notes and saved
+across restarts. **Reset** or a double-click on the divider restores the default.
+The divider also supports Left/Right arrow keys (10px, or 50px with Shift),
+Home/End for the available limits, and Escape to cancel a drag. Smaller panes
+limit the displayed width to fit without changing the saved preference.
+
 The contents stay on the right while the note scrolls, using the existing note
 font, compact spacing, and theme colors. The interaction takes cues from
 [Wikipedia's table of contents](https://www.mediawiki.org/wiki/Reading/Web/Desktop_Improvements/Features/Table_of_contents):
@@ -34,7 +48,8 @@ font, compact spacing, and theme colors. The interaction takes cues from
 - Initially only top-level headings appear. Click a heading's arrow to expand or
   collapse its subsections; click its text to jump to that heading.
 - Levels follow the note's actual hierarchy, including notes starting at H2 or
-  skipping a heading level. All H1–H6 headings are included.
+  skipping a heading level. H2–H6 are included, along with H1 when
+  **Treat H1 as title** is off.
 - The current section is emphasized; a collapsed ancestor is emphasized when
   the current subsection is hidden. Scrolling does not expand branches.
 - **hide** collapses the column to a contents button; click it to show the list
@@ -43,7 +58,8 @@ font, compact spacing, and theme colors. The interaction takes cues from
 - In panes narrower than 760px, a button opens the contents over the note.
   Selecting a heading or pressing Escape closes it.
 
-Notes without headings have no contents column. Live Preview, Source mode,
+Notes without eligible headings (including H1-only notes with the title setting
+on) have no contents column. Live Preview, Source mode,
 embedded notes, and print output do not receive a contents panel. The plugin
 does not insert a TOC into Markdown files.
 
@@ -154,7 +170,7 @@ local CSS snippets and are not bundled with this plugin.
 ## Install With BRAT
 
 1. Push this repository to GitHub.
-2. Create a GitHub release whose tag matches `manifest.json` `version`, for example `0.3.0`.
+2. Create a GitHub release whose tag matches `manifest.json` `version`, for example `0.3.1`.
 3. Attach these release assets:
    - `manifest.json`
    - `main.js`
@@ -167,8 +183,8 @@ The included GitHub Actions workflow creates the release assets automatically wh
 ## Release
 
 ```sh
-git tag 0.3.0
-git push origin 0.3.0
+git tag 0.3.1
+git push origin 0.3.1
 ```
 
 Before the next release, update the version in `manifest.json`, `package.json`, and
@@ -187,8 +203,9 @@ npm test
 The smoke test launches Obsidian with a disposable profile and vault under the
 system temporary directory. It checks source layout, wrapping, Japanese text,
 line numbers, rulers, and mode switching, plus Reading view contents, branch
-controls, duplicate-heading navigation, split/narrow panes, live heading updates,
-and setting persistence. It never attaches
+controls, H1 title handling, duplicate-heading navigation, split/narrow panes,
+live heading updates, mouse and keyboard resizing, width settings, and setting
+persistence. It never attaches
 to an existing Obsidian session. On Linux, the default executable is
 `/opt/Obsidian/obsidian`; set `OBSIDIAN_BIN` to override it. Test screenshots are
 saved under the temporary directory printed by the test.
