@@ -154,7 +154,7 @@ local CSS snippets and are not bundled with this plugin.
 ## Install With BRAT
 
 1. Push this repository to GitHub.
-2. Create a GitHub release whose tag matches `manifest.json` `version`, for example `0.2.4`.
+2. Create a GitHub release whose tag matches `manifest.json` `version`, for example `0.3.0`.
 3. Attach these release assets:
    - `manifest.json`
    - `main.js`
@@ -167,8 +167,8 @@ The included GitHub Actions workflow creates the release assets automatically wh
 ## Release
 
 ```sh
-git tag 0.2.4
-git push origin 0.2.4
+git tag 0.3.0
+git push origin 0.3.0
 ```
 
 Before the next release, update the version in `manifest.json`, `package.json`, and
