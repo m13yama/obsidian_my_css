@@ -226,10 +226,156 @@ async function main() {
     assert(Math.abs(finalRuler.expected - finalRuler.actual) < 2, "Rulers use source font metrics after mode switches and plugin reloads");
     await page.locator(".notice").first().waitFor({ state: "hidden", timeout: 10000 });
     await page.screenshot({ path: join(root, "source-editor.png") });
+
+    // Reading navigation uses the complete metadata outline, not just rendered
+    // headings; duplicated names must still navigate to the correct source line.
+    const paragraph = "A paragraph of note content. 日本語の本文です。\n\n".repeat(25);
+    const tocSource = `## Overview\n\n${paragraph}### Details\n\n${paragraph}` +
+      `##### Deep detail\n\n${paragraph}## 日本語の見出し\n\n${paragraph}` +
+      `### Repeated\n\n${paragraph}### Repeated\n\n${paragraph}` +
+      `## Final\n\n\`\`\`md\n# Not a heading\n\`\`\`\n\n${paragraph}` +
+      `Setext section\n--------------\n\n${paragraph}`;
+    await page.evaluate(async source => {
+      const file = await app.vault.create("contents.md", source);
+      await app.workspace.activeLeaf.openFile(file, { state: { mode: "preview" } });
+    }, tocSource);
+    const toc = page.locator(".mycss-reading-toc");
+    const visibleLinks = () => page.locator(".mycss-toc-link:visible").allTextContents();
+    await toc.waitFor();
+    assert.deepEqual(await visibleLinks(), ["Beginning", "Overview", "日本語の見出し", "Final", "Setext section"]);
+    const tocBounds = async () => page.evaluate(() => {
+      const box = element => {
+        const { x, y, width, right } = element.getBoundingClientRect();
+        return { x, y, width, right };
+      };
+      return { nav: box(document.querySelector(".mycss-reading-toc")),
+        preview: box(document.querySelector(".mycss-has-toc > .markdown-preview-view")) };
+    });
+    const shownBounds = await tocBounds();
+    assert(shownBounds.nav.x >= shownBounds.preview.right - 1, "Contents are to the right, without overlapping the note");
+    const overviewToggle = toc.getByRole("button", { name: "Expand subsections: Overview", exact: true });
+    await overviewToggle.focus();
+    await page.keyboard.press("Enter");
+    assert((await visibleLinks()).includes("Details"), "Keyboard activation expands subsections");
+    assert(!(await visibleLinks()).includes("Deep detail"), "Deeper branches start collapsed too");
+    await toc.getByRole("button", { name: "Expand subsections: Details", exact: true }).click();
+    assert((await visibleLinks()).includes("Deep detail"), "Skipped heading levels retain their hierarchy");
+    await toc.getByRole("button", { name: "Contents: hide", exact: true }).click();
+    assert.equal(await page.locator(".mycss-toc-list:visible").count(), 0);
+    assert((await tocBounds()).preview.width > shownBounds.preview.width + 100, "Hiding contents releases note width");
+    await toc.getByRole("button", { name: "Show contents", exact: true }).click();
+    assert((await visibleLinks()).includes("Deep detail"), "Hide/show retains expanded branches");
+    await toc.getByRole("button", { name: "Expand subsections: 日本語の見出し", exact: true }).click();
+    await toc.getByRole("link", { name: "Repeated", exact: true }).nth(1).click();
+    await page.waitForFunction(() => {
+      const view = app.workspace.activeLeaf.view;
+      const target = app.metadataCache.getFileCache(view.file).headings.filter(h => h.heading === "Repeated")[1];
+      return Math.abs(view.previewMode.getScroll() - target.position.start.line) < 1;
+    });
+    assert(Math.abs((await tocBounds()).nav.y - shownBounds.nav.y) < 1, "Contents stay fixed during note scrolling");
+    await page.waitForFunction(() => document.querySelector('.mycss-toc-link[aria-current="location"]')?.textContent === "Repeated");
+    await toc.getByRole("button", { name: "Collapse subsections: 日本語の見出し", exact: true }).click();
+    assert.equal(await toc.locator('[aria-current="location"]').textContent(), "日本語の見出し");
+    await toc.getByRole("link", { name: "Beginning", exact: true }).click();
+    await page.waitForFunction(() => app.workspace.activeLeaf.view.previewMode.getScroll() < 1);
+    await page.screenshot({ path: join(root, "reading-toc.png") });
+
+    // Metadata updates refresh the contents without resetting open branches.
+    await page.evaluate(async () => {
+      const file = app.workspace.activeLeaf.view.file;
+      const source = await app.vault.read(file);
+      await app.vault.modify(file, `An introduction.\n\n${source}\n\n## Added later\n\nText.`);
+    });
+    await toc.getByRole("link", { name: "Added later", exact: true }).waitFor();
+    assert((await visibleLinks()).includes("Deep detail"));
+
+    // Each pane gets its own outline and unique accessible control IDs.
+    await page.evaluate(async () => {
+      const file = await app.vault.create("other.md", "# Other note\n\n## Child\n\nText.");
+      const leaf = app.workspace.getLeaf("split", "vertical");
+      await leaf.openFile(file, { state: { mode: "preview" } });
+    });
+    await page.waitForFunction(() => document.querySelectorAll(".mycss-reading-toc").length === 2);
+    assert.equal(await toc.getByRole("link", { name: "Other note", exact: true, includeHidden: true }).count(), 1);
+    assert.equal(await page.evaluate(() => {
+      const ids = [...document.querySelectorAll(".mycss-reading-toc [id]")].map(el => el.id);
+      return ids.length === new Set(ids).size;
+    }), true);
+    await page.evaluate(() => app.workspace.activeLeaf.detach());
+    await page.waitForFunction(() => document.querySelectorAll(".mycss-reading-toc").length === 1);
+
+    // Narrow panes start with a button, retain full note width, and close on Escape.
+    await page.setViewportSize({ width: 700, height: 1000 });
+    await page.locator(".mycss-toc-narrow.mycss-toc-collapsed").waitFor();
+    await toc.getByRole("button", { name: "Show contents", exact: true }).click();
+    assert(await toc.getByRole("link", { name: "Overview", exact: true }).isVisible());
+    await page.screenshot({ path: join(root, "reading-toc-narrow.png") });
+    await page.keyboard.press("Escape");
+    assert.equal(await page.locator(".mycss-toc-list:visible").count(), 0);
+    await toc.getByRole("button", { name: "Show contents", exact: true }).click();
+    await toc.getByRole("link", { name: "Final", exact: true }).click();
+    assert.equal(await page.locator(".mycss-toc-list:visible").count(), 0);
+    await page.setViewportSize({ width: 1500, height: 1000 });
+    await page.waitForFunction(() => !document.querySelector(".mycss-toc-narrow"));
+    assert(await toc.getByRole("link", { name: "Overview", exact: true }).isVisible());
+
+    // The actual settings toggle removes the column, and off survives reload.
+    await page.evaluate(() => {
+      app.setting.open();
+      app.setting.openTabById("obsidian-my-css");
+    });
+    await page.locator(".setting-item").filter({ has: page.getByText("Show table of contents", { exact: true }) })
+      .locator(".checkbox-container").click();
+    await page.waitForFunction(() => !document.querySelector(".mycss-reading-toc"));
+    await page.evaluate(() => app.setting.close());
+    assert.equal(await page.locator(".mycss-has-toc").count(), 0);
+    await page.evaluate(async () => {
+      await app.plugins.disablePlugin("obsidian-my-css");
+      await app.plugins.enablePlugin("obsidian-my-css");
+    });
+    assert.equal(await page.evaluate(() => app.plugins.plugins["obsidian-my-css"].settings.readingTocEnabled), false);
+    assert.equal(await toc.count(), 0);
+    await page.evaluate(() => app.plugins.plugins["obsidian-my-css"].setReadingTocSetting("readingTocEnabled", true));
+    await toc.waitFor();
+    await toc.getByRole("button", { name: "Contents: hide", exact: true }).click();
+    await page.evaluate(async () => {
+      await app.plugins.disablePlugin("obsidian-my-css");
+      await app.plugins.enablePlugin("obsidian-my-css");
+    });
+    await toc.getByRole("button", { name: "Show contents", exact: true }).waitFor();
+    assert.equal(await page.locator(".mycss-toc-list:visible").count(), 0, "Visibility preference survives reload");
+    await toc.getByRole("button", { name: "Show contents", exact: true }).click();
+
+    for (const sourceMode of [false, true]) {
+      await page.evaluate(source => app.workspace.activeLeaf.setViewState({
+        type: "markdown", state: { file: "contents.md", mode: "source", source },
+      }), sourceMode);
+      await page.waitForFunction(() => !document.querySelector(".mycss-reading-toc"));
+      assert.equal(await page.locator(".mycss-has-toc").count(), 0);
+    }
+    await page.evaluate(async () => {
+      const file = await app.vault.create("no-headings.md", "Just text.\n\n```md\n# Code, not a heading\n```");
+      await app.workspace.activeLeaf.openFile(file, { state: { mode: "preview" } });
+    });
+    await settle();
+    assert.equal(await toc.count(), 0, "Notes without headings have no contents panel");
+    await page.evaluate(() => app.workspace.activeLeaf.openFile(app.vault.getAbstractFileByPath("contents.md"), { state: { mode: "preview" } }));
+    await toc.waitFor();
+    assert(!(await visibleLinks()).includes("Details"), "Newly opened notes start collapsed");
+    await page.evaluate(() => {
+      document.body.removeClass("theme-light");
+      document.body.addClass("theme-dark");
+    });
+    await page.screenshot({ path: join(root, "reading-toc-dark.png") });
+    assert.equal(await page.evaluate(async () => {
+      const text = await app.vault.read(app.vault.getAbstractFileByPath("contents.md"));
+      return text;
+    }), `An introduction.\n\n${tocSource}\n\n## Added later\n\nText.`, "TOC interactions never edit note contents");
     await page.evaluate(() => app.plugins.disablePlugin("obsidian-my-css"));
+    assert.equal(await page.locator(".mycss-reading-toc, .mycss-has-toc").count(), 0);
     assert.equal(await page.locator(".mycss-source-editor, .mycss-source-rulers, .mycss-source-line-numbers").count(), 0);
     assert.deepEqual(errors, [], "No runtime errors");
-    console.log(`Source editor smoke test passed. Screenshot: ${join(root, "source-editor.png")}`);
+    console.log(`Source editor and Reading view TOC smoke tests passed. Screenshots: ${root}`);
   } catch (error) {
     if (page) await page.screenshot({ path: join(root, "failure.png") }).catch(() => {});
     console.error(`Test artifacts: ${root}`, errors);

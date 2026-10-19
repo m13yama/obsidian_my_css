@@ -225,6 +225,201 @@ body {
   box-shadow: none;
 }
 
+/* Reading view navigation: a fixed right column beside the scrolling note. */
+.markdown-reading-view.mycss-has-toc {
+  --mycss-toc-width: 14rem;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--mycss-toc-width);
+  position: relative;
+}
+
+.markdown-reading-view.mycss-has-toc > .markdown-preview-view {
+  grid-area: 1 / 1;
+  min-width: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.mycss-reading-toc {
+  grid-area: 1 / 2;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 0;
+  margin-block: 1.5rem;
+  padding-inline: 0.8rem;
+  border-inline-start: 1px solid var(--mycss-h2-rule-color);
+  color: var(--text-normal);
+  font-family: var(--font-text);
+  font-size: var(--font-text-size);
+  line-height: var(--mycss-note-line-height);
+}
+
+.mycss-toc-header {
+  display: flex;
+  align-items: center;
+  gap: 0.6em;
+  flex: none;
+  padding-block-end: 0.35em;
+  margin-block-end: 0.35em;
+  border-bottom: 1px solid var(--mycss-h2-rule-color);
+}
+
+.mycss-toc-title {
+  font-weight: 600;
+}
+
+.mycss-reading-toc button {
+  height: auto;
+  min-width: 0;
+  margin: 0;
+  padding: 0.15em 0.25em;
+  border: 0;
+  border-radius: var(--radius-s);
+  box-shadow: none;
+  background: transparent;
+  color: var(--text-muted);
+  font: inherit;
+  cursor: pointer;
+}
+
+.mycss-reading-toc button:hover {
+  background: var(--background-modifier-hover);
+  color: var(--text-normal);
+}
+
+.mycss-reading-toc :is(button, a):focus-visible {
+  outline: 2px solid var(--interactive-accent);
+  outline-offset: -2px;
+}
+
+.mycss-reading-toc .mycss-toc-toggle {
+  font-size: 0.8em;
+}
+
+.mycss-reading-toc ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.mycss-reading-toc .mycss-toc-list {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  font-size: 0.9em;
+}
+
+.mycss-reading-toc .mycss-toc-children {
+  padding-inline-start: 1em;
+}
+
+.mycss-toc-row {
+  display: grid;
+  grid-template-columns: 1.25em minmax(0, 1fr);
+  align-items: start;
+}
+
+.mycss-toc-link {
+  grid-area: 1 / 2;
+  display: block;
+  padding-block: 0.2em;
+  color: var(--text-muted);
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+
+.mycss-toc-item > .mycss-toc-link {
+  padding-inline-start: 1.25em;
+}
+
+.mycss-toc-link:hover {
+  color: var(--text-accent);
+  text-decoration: underline;
+}
+
+.mycss-toc-link[aria-current="location"] {
+  color: var(--text-normal);
+  font-weight: 600;
+}
+
+.mycss-reading-toc .mycss-toc-branch-toggle {
+  grid-area: 1 / 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.2em 0;
+  min-height: 1.8em;
+}
+
+.mycss-toc-branch-toggle svg {
+  width: 1em;
+  height: 1em;
+}
+
+.mycss-toc-branch-toggle[aria-expanded="true"] svg {
+  transform: rotate(90deg);
+}
+
+.mycss-reading-toc [hidden] {
+  display: none !important;
+}
+
+.markdown-reading-view.mycss-toc-collapsed {
+  grid-template-columns: minmax(0, 1fr) 2.75rem;
+}
+
+.mycss-toc-collapsed .mycss-reading-toc {
+  padding-inline: 0.4rem;
+  border: 0;
+}
+
+.mycss-toc-collapsed .mycss-toc-header {
+  justify-content: center;
+  border: 0;
+}
+
+/* Narrow panes keep the full note width and open contents as a small overlay. */
+.markdown-reading-view.mycss-toc-narrow {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.mycss-toc-narrow .mycss-reading-toc {
+  grid-area: auto;
+  position: absolute;
+  z-index: 5;
+  inset-block-start: 0.5rem;
+  inset-inline-end: 0.5rem;
+  width: min(var(--mycss-toc-width), calc(100% - 1rem));
+  max-height: calc(100% - 1rem);
+  margin: 0;
+  padding: 0.65rem;
+  background: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-s);
+  box-shadow: var(--shadow-s);
+}
+
+.mycss-toc-narrow.mycss-toc-collapsed .mycss-reading-toc {
+  width: auto;
+  padding: 0.25rem;
+  box-shadow: none;
+}
+
+.mycss-toc-narrow.mycss-toc-collapsed .mycss-toc-header {
+  margin: 0;
+  padding: 0;
+}
+
+@media print {
+  .markdown-reading-view.mycss-has-toc {
+    display: block;
+  }
+
+  .mycss-reading-toc {
+    display: none;
+  }
+}
+
 /* Center note images and embedded image containers. */
 .markdown-rendered img:not(.cm-widgetBuffer),
 .markdown-source-view.mod-cm6.is-live-preview .image-embed img {

@@ -1,9 +1,11 @@
-const { Modal, Notice, Plugin, PluginSettingTab, Setting, setIcon, editorLivePreviewField } = require("obsidian");
+const { Component, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting, setIcon, editorLivePreviewField } = require("obsidian");
 const { Prec } = require("@codemirror/state");
 const { Decoration, EditorView, GutterMarker, ViewPlugin, gutter } = require("@codemirror/view");
 
 const DEFAULT_SETTINGS = {
   markdownLineWidth: "880px",
+  readingTocEnabled: true,
+  readingTocCollapsed: false,
   sourceEditorEnabled: true,
   sourceLineWrap: true,
   sourceLineNumbers: true,
@@ -272,14 +274,214 @@ function createMermaidZoomIconButton(parentEl, icon, label) {
   return button;
 }
 
+let readingTocId = 0;
+
+// Keep navigation outside the virtualized preview so every heading is available,
+// including off-screen headings and repeated names. Scroll by source line.
+class ReadingTableOfContents extends Component {
+  constructor(plugin, view) {
+    super();
+    this.plugin = plugin;
+    this.view = view;
+    this.host = view.previewMode.containerEl;
+    this.win = this.host.ownerDocument.defaultView;
+    this.id = `mycss-toc-${++readingTocId}`;
+    this.expanded = new Set();
+    this.entries = [];
+    this.narrowOpen = false;
+    this.labels = this.host.matches(":lang(ja)")
+      ? { contents: "目次", hide: "非表示", show: "目次を表示", top: "先頭", expand: "下位見出しを表示", collapse: "下位見出しを隠す" }
+      : { contents: "Contents", hide: "hide", show: "Show contents", top: "Beginning", expand: "Expand subsections", collapse: "Collapse subsections" };
+  }
+
+  onload() {
+    this.host.addClass("mycss-has-toc");
+    this.nav = this.host.createEl("nav", {
+      cls: "mycss-reading-toc", attr: { "aria-label": this.labels.contents },
+    });
+    const header = this.nav.createDiv({ cls: "mycss-toc-header" });
+    this.title = header.createEl("span", { cls: "mycss-toc-title", text: this.labels.contents });
+    this.toggle = header.createEl("button", {
+      cls: "mycss-toc-toggle", attr: { type: "button", "aria-controls": this.id },
+    });
+    this.list = this.nav.createEl("ul", { cls: "mycss-toc-list", attr: { id: this.id } });
+    this.registerDomEvent(this.toggle, "click", () => {
+      if (this.narrow) {
+        this.narrowOpen = !this.narrowOpen;
+        this.updateVisibility();
+      } else {
+        void this.plugin.setReadingTocSetting("readingTocCollapsed", !this.plugin.settings.readingTocCollapsed);
+      }
+    });
+    this.registerDomEvent(this.nav, "keydown", (event) => {
+      if (event.key === "Escape" && this.narrow && this.narrowOpen) {
+        this.narrowOpen = false;
+        this.updateVisibility();
+        this.toggle.focus();
+        event.preventDefault();
+        event.stopPropagation();
+      }
+    });
+    this.registerDomEvent(this.host, "scroll", () => this.scheduleActiveUpdate(), { capture: true, passive: true });
+    const observer = new this.win.ResizeObserver(() => {
+      const narrow = this.host.clientWidth < 760;
+      if (narrow !== this.narrow) {
+        this.narrow = narrow;
+        this.narrowOpen = false;
+        this.updateVisibility();
+      }
+    });
+    observer.observe(this.host);
+    this.register(() => observer.disconnect());
+    this.narrow = this.host.clientWidth < 760;
+    this.updateVisibility();
+  }
+
+  updateVisibility() {
+    const collapsed = this.narrow ? !this.narrowOpen : this.plugin.settings.readingTocCollapsed;
+    this.host.toggleClass("mycss-toc-narrow", this.narrow);
+    this.host.toggleClass("mycss-toc-collapsed", collapsed);
+    this.list.hidden = collapsed;
+    this.title.hidden = collapsed;
+    this.toggle.setAttribute("aria-expanded", String(!collapsed));
+    this.toggle.setAttribute("aria-label", collapsed ? this.labels.show : `${this.labels.contents}: ${this.labels.hide}`);
+    this.toggle.title = collapsed ? this.labels.show : this.labels.hide;
+    this.toggle.empty();
+    if (collapsed) setIcon(this.toggle, "list-tree");
+    else this.toggle.setText(this.labels.hide);
+  }
+
+  update(headings) {
+    const signature = JSON.stringify(headings.map((heading) => [heading.level, heading.heading, heading.position.start.line]));
+    const fileChanged = this.file !== this.view.file;
+    if (!fileChanged && this.signature === signature) return;
+    if (fileChanged) {
+      this.expanded.clear();
+      this.narrowOpen = false;
+      this.list.scrollTop = 0;
+    }
+    this.file = this.view.file;
+    this.signature = signature;
+    this.list.empty();
+    this.entries = [];
+    const beginning = this.list.createEl("li", { cls: "mycss-toc-item" });
+    this.topLink = this.createLink(beginning, this.labels.top, 0);
+    const stack = [];
+    const occurrences = new Map();
+    for (const heading of headings) {
+      while (stack.length && stack[stack.length - 1].level >= heading.level) stack.pop();
+      const parent = stack[stack.length - 1];
+      // Use heading text and occurrence, rather than line number, to retain open
+      // branches when paragraphs above them are edited.
+      const base = JSON.stringify([heading.level, heading.heading]);
+      const occurrence = (occurrences.get(base) || 0) + 1;
+      occurrences.set(base, occurrence);
+      const entry = { level: heading.level, line: heading.position.start.line,
+        key: `${base}:${occurrence}`, parent, label: heading.heading };
+      if (parent && !parent.children) {
+        parent.children = parent.item.createEl("ul", {
+          cls: "mycss-toc-children", attr: { id: `${this.id}-branch-${this.entries.length}` },
+        });
+        parent.button = parent.row.createEl("button", {
+          cls: "mycss-toc-branch-toggle", attr: { type: "button", "aria-controls": parent.children.id },
+        });
+        setIcon(parent.button, "chevron-right");
+        parent.button.addEventListener("click", () => {
+          if (this.expanded.has(parent.key)) this.expanded.delete(parent.key);
+          else this.expanded.add(parent.key);
+          this.updateBranch(parent);
+          this.updateActive();
+        });
+        this.updateBranch(parent);
+      }
+      entry.item = (parent ? parent.children : this.list).createEl("li", { cls: "mycss-toc-item" });
+      entry.row = entry.item.createDiv({ cls: "mycss-toc-row" });
+      entry.link = this.createLink(entry.row, heading.heading, entry.line);
+      this.entries.push(entry);
+      stack.push(entry);
+    }
+    const keys = new Set(this.entries.map((entry) => entry.key));
+    this.expanded = new Set([...this.expanded].filter((key) => keys.has(key)));
+    this.updateVisibility();
+    this.scheduleActiveUpdate();
+  }
+
+  createLink(parent, label, line) {
+    const link = parent.createEl("a", {
+      cls: "mycss-toc-link", text: label, attr: { href: `#${encodeURIComponent(label)}` },
+    });
+    link.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      if (this.narrow) {
+        this.narrowOpen = false;
+        this.updateVisibility();
+      }
+      // Obsidian resolves the line even if the target has not been rendered yet.
+      this.view.leaf.setEphemeralState({ line, focus: true });
+      this.scheduleActiveUpdate();
+    });
+    return link;
+  }
+
+  updateBranch(entry) {
+    const expanded = this.expanded.has(entry.key);
+    entry.children.hidden = !expanded;
+    entry.button.setAttribute("aria-expanded", String(expanded));
+    entry.button.setAttribute("aria-label", `${expanded ? this.labels.collapse : this.labels.expand}: ${entry.label}`);
+  }
+
+  scheduleActiveUpdate() {
+    if (this.frame) return;
+    this.frame = this.win.requestAnimationFrame(() => {
+      this.frame = null;
+      this.updateActive();
+    });
+  }
+
+  updateActive() {
+    const line = this.view.previewMode.getScroll();
+    if (!Number.isFinite(line) || !this.topLink) return;
+    let active;
+    for (const entry of this.entries) {
+      if (entry.line > line + 0.5) break;
+      active = entry;
+    }
+    // Highlight the visible ancestor without opening branches during scrolling.
+    for (let parent = active?.parent; parent; parent = parent.parent) {
+      if (!this.expanded.has(parent.key)) active = parent;
+    }
+    const link = active?.link || this.topLink;
+    if (this.activeLink !== link) {
+      this.activeLink?.removeAttribute("aria-current");
+      link.setAttribute("aria-current", "location");
+      this.activeLink = link;
+    }
+  }
+
+  onunload() {
+    if (this.frame) this.win.cancelAnimationFrame(this.frame);
+    this.nav.remove();
+    this.host.removeClass("mycss-has-toc", "mycss-toc-narrow", "mycss-toc-collapsed");
+  }
+}
+
 module.exports = class ObsidianMyCssPlugin extends Plugin {
   async onload() {
     await this.loadSettings();
+    this.readingTocs = new Map();
     this.sourceExtensions = [];
     this.registerEditorExtension(this.sourceExtensions);
     this.applySettings();
     this.addSettingTab(new ObsidianMyCssSettingTab(this.app, this));
     this.registerDomEvent(document, "click", (event) => this.openMermaidZoom(event));
+    const refreshTocs = () => this.scheduleReadingTocs();
+    this.registerEvent(this.app.workspace.on("layout-change", refreshTocs));
+    this.registerEvent(this.app.workspace.on("active-leaf-change", refreshTocs));
+    this.registerEvent(this.app.workspace.on("file-open", refreshTocs));
+    this.registerEvent(this.app.metadataCache.on("changed", refreshTocs));
+    this.app.workspace.onLayoutReady(refreshTocs);
+    this.register(() => window.clearTimeout(this.readingTocTimer));
     this.addCommand({
       id: "toggle-source-line-wrap",
       name: "Toggle source mode line wrapping",
@@ -293,7 +495,46 @@ module.exports = class ObsidianMyCssPlugin extends Plugin {
   }
 
   onunload() {
+    for (const toc of this.readingTocs.values()) this.removeChild(toc);
+    this.readingTocs.clear();
     document.body.style.removeProperty("--file-line-width");
+  }
+
+  scheduleReadingTocs() {
+    window.clearTimeout(this.readingTocTimer);
+    this.readingTocTimer = window.setTimeout(() => this.syncReadingTocs(), 0);
+  }
+
+  syncReadingTocs() {
+    const views = new Set();
+    if (this.settings.readingTocEnabled) {
+      for (const leaf of this.app.workspace.getLeavesOfType("markdown")) {
+        const view = leaf.view;
+        if (!(view instanceof MarkdownView) || view.getMode() !== "preview" || !view.file) continue;
+        const headings = this.app.metadataCache.getFileCache(view.file)?.headings || [];
+        if (!headings.length) continue;
+        views.add(view);
+        let toc = this.readingTocs.get(view);
+        if (!toc) {
+          toc = this.addChild(new ReadingTableOfContents(this, view));
+          this.readingTocs.set(view, toc);
+        }
+        toc.update(headings);
+        toc.updateVisibility();
+      }
+    }
+    for (const [view, toc] of this.readingTocs) {
+      if (!views.has(view)) {
+        this.removeChild(toc);
+        this.readingTocs.delete(view);
+      }
+    }
+  }
+
+  async setReadingTocSetting(key, value) {
+    this.settings[key] = value;
+    this.syncReadingTocs();
+    await this.saveSettings();
   }
 
   async loadSettings() {
@@ -319,6 +560,7 @@ module.exports = class ObsidianMyCssPlugin extends Plugin {
     document.body.style.setProperty("--file-line-width", this.settings.markdownLineWidth);
     this.sourceExtensions.splice(0, this.sourceExtensions.length, sourceEditorExtension({ ...this.settings }));
     this.app.workspace.updateOptions();
+    this.scheduleReadingTocs();
   }
 
   async setSourceSetting(key, value) {
@@ -422,6 +664,13 @@ class ObsidianMyCssSettingTab extends PluginSettingTab {
             lineWidthInput.setValue(this.plugin.settings.markdownLineWidth);
           });
       });
+
+    containerEl.createEl("h3", { text: "Reading view" });
+    new Setting(containerEl)
+      .setName("Show table of contents")
+      .setDesc("Show a fixed table of contents on the right in Reading view. Subsections start collapsed; use the arrows to expand them.")
+      .addToggle((toggle) => toggle.setValue(this.plugin.settings.readingTocEnabled)
+        .onChange((value) => this.plugin.setReadingTocSetting("readingTocEnabled", value)));
 
     containerEl.createEl("h3", { text: "Source editor" });
     const addToggle = (name, description, key) => new Setting(containerEl)

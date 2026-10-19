@@ -8,6 +8,7 @@ Personal Obsidian CSS packaged as a lightweight community plugin so it can be in
 - Compact academic typography with tighter body text, paragraphs, and lists.
 - matcha.css-inspired H1–H6 headings with thin H1/H2 dividers in Reading view and Live Preview, and in Source mode when its monospace option is disabled.
 - Theme-aware quotes, striped tables, dividers, rounded code and image corners, disclosure panels, and keyboard hints inspired by matcha.css.
+- A fixed right-hand table of contents in Reading view, with hide/show controls and initially collapsed subsections.
 - Horizontally centered images and tables in Reading view and Live Preview.
 - Smaller code blocks in Reading view and pink inline code with theme-aware colors.
 - Body-sized code and non-italic LaTeX source in Source mode and Live Preview, with syntax highlighting preserved.
@@ -18,6 +19,33 @@ Personal Obsidian CSS packaged as a lightweight community plugin so it can be in
 The markdown line width can be changed from the plugin settings. It accepts CSS
 width values such as `880px`, `72rem`, `calc(100% - 2rem)`, and `100%`. A bare
 number is treated as pixels.
+
+## Reading View Table of Contents
+
+Open **Settings → Obsidian My CSS → Reading view → Show table of contents** to
+turn the feature on or off (on by default). Changes apply immediately to open
+notes and are saved across restarts. Disabling it removes the entire navigation
+column and restores the original note width.
+
+The contents stay on the right while the note scrolls, using the existing note
+font, compact spacing, and theme colors. The interaction takes cues from
+[Wikipedia's table of contents](https://www.mediawiki.org/wiki/Reading/Web/Desktop_Improvements/Features/Table_of_contents):
+
+- Initially only top-level headings appear. Click a heading's arrow to expand or
+  collapse its subsections; click its text to jump to that heading.
+- Levels follow the note's actual hierarchy, including notes starting at H2 or
+  skipping a heading level. All H1–H6 headings are included.
+- The current section is emphasized; a collapsed ancestor is emphasized when
+  the current subsection is hidden. Scrolling does not expand branches.
+- **hide** collapses the column to a contents button; click it to show the list
+  again. This visibility preference is saved. Branches start collapsed when
+  opening another note or returning to Reading view.
+- In panes narrower than 760px, a button opens the contents over the note.
+  Selecting a heading or pressing Escape closes it.
+
+Notes without headings have no contents column. Live Preview, Source mode,
+embedded notes, and print output do not receive a contents panel. The plugin
+does not insert a TOC into Markdown files.
 
 ## Source Editor
 
@@ -158,7 +186,9 @@ npm test
 
 The smoke test launches Obsidian with a disposable profile and vault under the
 system temporary directory. It checks source layout, wrapping, Japanese text,
-line numbers, rulers, mode switching, and setting persistence. It never attaches
+line numbers, rulers, and mode switching, plus Reading view contents, branch
+controls, duplicate-heading navigation, split/narrow panes, live heading updates,
+and setting persistence. It never attaches
 to an existing Obsidian session. On Linux, the default executable is
 `/opt/Obsidian/obsidian`; set `OBSIDIAN_BIN` to override it. Test screenshots are
 saved under the temporary directory printed by the test.
