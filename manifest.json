@@ -1,7 +1,7 @@
 {
   "id": "obsidian-my-css",
   "name": "Obsidian My CSS",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "minAppVersion": "1.7.2",
   "description": "Personal CSS, a collapsible Reading view table of contents, and a configurable full-width source editor for Obsidian.",
   "author": "yuki",

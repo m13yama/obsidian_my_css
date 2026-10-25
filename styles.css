@@ -9,6 +9,11 @@ body {
   --file-line-width: 880px;
 }
 
+/* Keep the core Bookmarks action available before a note is bookmarked. */
+.workspace-leaf-content[data-type="markdown"] .view-action.mod-bookmark {
+  display: flex;
+}
+
 /*
   Compact note typography with matcha.css-inspired headings and components.
   Reference: https://github.com/lowlighter/matcha (matcha.css 3.0.1)

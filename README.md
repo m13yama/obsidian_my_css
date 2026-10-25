@@ -5,6 +5,8 @@ Personal Obsidian CSS packaged as a lightweight community plugin so it can be in
 ## What It Includes
 
 - Wider readable markdown line width.
+- An always-visible core Bookmarks button in the note header, including notes
+  that are not bookmarked yet.
 - Compact academic typography with tighter body text, paragraphs, and lists.
 - matcha.css-inspired H1–H6 headings with thin H1/H2 dividers in Reading view and Live Preview, and in Source mode when its monospace option is disabled.
 - Theme-aware quotes, striped tables, dividers, rounded code and image corners, disclosure panels, and keyboard hints inspired by matcha.css.
@@ -19,6 +21,18 @@ Personal Obsidian CSS packaged as a lightweight community plugin so it can be in
 The markdown line width can be changed from the plugin settings. It accepts CSS
 width values such as `880px`, `72rem`, `calc(100% - 2rem)`, and `100%`. A bare
 number is treated as pixels.
+
+## Bookmark Button
+
+With the **Bookmarks** core plugin enabled, its bookmark button stays visible
+at the top right of Markdown notes in Reading view, Live Preview, and Source
+mode. Click it to open Obsidian's standard bookmark dialog: add the note, edit
+its bookmark title or group, or remove an existing bookmark.
+
+The button remains visible when the sidebar is collapsed. Keep **Settings →
+Appearance → Show tab title bar** enabled to display the note header. This
+changes the visibility of the existing core button; bookmarks are still managed
+and saved by Obsidian. Disabling My CSS restores the normal button visibility.
 
 ## Reading View Table of Contents
 
@@ -170,7 +184,7 @@ local CSS snippets and are not bundled with this plugin.
 ## Install With BRAT
 
 1. Push this repository to GitHub.
-2. Create a GitHub release whose tag matches `manifest.json` `version`, for example `0.3.1`.
+2. Create a GitHub release whose tag matches `manifest.json` `version`, for example `0.3.2`.
 3. Attach these release assets:
    - `manifest.json`
    - `main.js`
@@ -183,8 +197,8 @@ The included GitHub Actions workflow creates the release assets automatically wh
 ## Release
 
 ```sh
-git tag 0.3.1
-git push origin 0.3.1
+git tag 0.3.2
+git push origin 0.3.2
 ```
 
 Before the next release, update the version in `manifest.json`, `package.json`, and
