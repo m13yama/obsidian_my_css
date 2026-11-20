@@ -14,7 +14,6 @@ Personal Obsidian CSS packaged as a lightweight community plugin so it can be in
 - Horizontally centered images and tables in Reading view and Live Preview.
 - Smaller code blocks in Reading view and pink inline code with theme-aware colors.
 - Body-sized code and non-italic LaTeX source in Source mode and Live Preview, with syntax highlighting preserved.
-- Mermaid diagrams that fit the markdown column and open in a larger zoomable view when clicked.
 - A full-width Source editor with left-aligned line numbers, optional wrapping,
   column rulers, a monospace font, and current-line highlighting.
 
@@ -117,8 +116,8 @@ Obsidian's font size setting.
 Headings and common note components take their cues from
 [matcha.css 3.0.1](https://github.com/lowlighter/matcha), adapted to Obsidian's theme
 colors and note font size. Styles are bundled locally, with no CDN dependency.
-The compact body spacing, centered media, pink inline code, source editor tools,
-and Mermaid zoom remain specific to this plugin. Source mode uses uniform
+The compact body spacing, centered media, pink inline code, and source editor tools
+remain specific to this plugin. Source mode uses uniform
 heading sizes when its Monospace font option is enabled.
 
 | Heading | Size | Weight | Decoration |
@@ -174,9 +173,9 @@ In Source mode and Live Preview, code blocks, inline code, and LaTeX source use
 setting. This also applies to rendered code in Live Preview. LaTeX source stays
 non-italic, including inline and display-math source.
 
-Rendered Mermaid diagrams are constrained to the markdown column so they do not
-spill outside the page. Click a diagram to open a larger scrollable view with
-zoom controls.
+Mermaid sizing and zoom have moved to the independent
+[My Mermaid plugin](https://github.com/m13yama/obsidian_my_mermaid). Install and enable it
+separately to use those features; My CSS no longer changes Mermaid rendering.
 
 Machine-specific fonts and file explorer icons are configured separately with
 local CSS snippets and are not bundled with this plugin.
@@ -184,7 +183,7 @@ local CSS snippets and are not bundled with this plugin.
 ## Install With BRAT
 
 1. Push this repository to GitHub.
-2. Create a GitHub release whose tag matches `manifest.json` `version`, for example `0.3.2`.
+2. Create a GitHub release whose tag matches `manifest.json` `version`, for example `0.4.0`.
 3. Attach these release assets:
    - `manifest.json`
    - `main.js`
@@ -197,8 +196,8 @@ The included GitHub Actions workflow creates the release assets automatically wh
 ## Release
 
 ```sh
-git tag 0.3.2
-git push origin 0.3.2
+git tag 0.4.0
+git push origin 0.4.0
 ```
 
 Before the next release, update the version in `manifest.json`, `package.json`, and

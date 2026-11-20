@@ -52,7 +52,9 @@ async function main() {
     assert.equal(await page.evaluate(() => app.vault.adapter.basePath), vault);
     const trust = page.getByRole("button", { name: "Trust author and enable plugins" });
     if (await trust.count()) await trust.click();
-    await page.evaluate(() => app.plugins.enablePlugin("obsidian-my-css"));
+    await page.waitForFunction(() => !!app.plugins.plugins["obsidian-my-css"]);
+    await page.bringToFront();
+    await page.evaluate(() => window.dispatchEvent(new Event("focus")));
     await page.setViewportSize({ width: 1500, height: 1000 });
     const source = ["# Heading", "0123456789".repeat(30), "日本語の長い行です。".repeat(30),
       "- A list item", "```js", "const value = 1;", "```", "Last line"].join("\n");
@@ -63,6 +65,24 @@ async function main() {
     }, source);
     await page.locator(".mycss-source-editor").waitFor();
     const settle = () => page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+    const openPluginSettings = async () => {
+      await page.evaluate(() => {
+        app.setting.open();
+        app.setting.openTabById("obsidian-my-css");
+      });
+      // Newer Obsidian versions open Settings in a separate native window.
+      for (let attempt = 0; attempt < 100; attempt++) {
+        for (const candidate of browser.contexts()[0].pages()) {
+          if (await candidate.getByText("Treat H1 as title", { exact: true }).count()) {
+            await candidate.setViewportSize({ width: 1500, height: 1000 });
+            await candidate.bringToFront();
+            return candidate;
+          }
+        }
+        await page.waitForTimeout(50);
+      }
+      throw new Error("My CSS settings did not open");
+    };
     const settings = async values => {
       await page.evaluate(async values => {
         const plugin = app.plugins.plugins["obsidian-my-css"];
@@ -253,11 +273,8 @@ async function main() {
 
     // Exercise the actual H1 setting, its immediate hierarchy change, and persistence.
     const toggleTitleSetting = async () => {
-      await page.evaluate(() => {
-        app.setting.open();
-        app.setting.openTabById("obsidian-my-css");
-      });
-      await page.locator(".setting-item").filter({ has: page.getByText("Treat H1 as title", { exact: true }) })
+      const settingsPage = await openPluginSettings();
+      await settingsPage.locator(".setting-item").filter({ has: settingsPage.getByText("Treat H1 as title", { exact: true }) })
         .locator(".checkbox-container").click();
       await page.evaluate(() => app.setting.close());
     };
@@ -318,11 +335,8 @@ async function main() {
     await resizer.dblclick({ position: { x: 4, y: 20 } });
     await waitForTocWidth(224);
 
-    await page.evaluate(() => {
-      app.setting.open();
-      app.setting.openTabById("obsidian-my-css");
-    });
-    const tocWidthSetting = page.locator(".setting-item").filter({ has: page.getByText("Table of contents width", { exact: true }) });
+    const widthSettingsPage = await openPluginSettings();
+    const tocWidthSetting = widthSettingsPage.locator(".setting-item").filter({ has: widthSettingsPage.getByText("Table of contents width", { exact: true }) });
     const tocWidthInput = tocWidthSetting.getByRole("spinbutton");
     await tocWidthInput.fill("360");
     await tocWidthSetting.getByRole("button", { name: "Apply", exact: true }).click();
@@ -446,11 +460,8 @@ async function main() {
     await page.evaluate(() => app.plugins.plugins["obsidian-my-css"].setReadingTocWidth(320));
 
     // The actual settings toggle removes the column, and off survives reload.
-    await page.evaluate(() => {
-      app.setting.open();
-      app.setting.openTabById("obsidian-my-css");
-    });
-    await page.locator(".setting-item").filter({ has: page.getByText("Show table of contents", { exact: true }) })
+    const tocSettingsPage = await openPluginSettings();
+    await tocSettingsPage.locator(".setting-item").filter({ has: tocSettingsPage.getByText("Show table of contents", { exact: true }) })
       .locator(".checkbox-container").click();
     await page.waitForFunction(() => !document.querySelector(".mycss-reading-toc"));
     await page.evaluate(() => app.setting.close());
